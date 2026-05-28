@@ -1,0 +1,11 @@
+---
+import AppLayout from '../../layouts/AppLayout.astro';
+import PetDashboard from '../../components/PetDashboard';
+---
+
+<AppLayout
+  title="Meus Pets — PATA & CÃO"
+  description="Gerencie seus pets cadastrados na plataforma PATA & CÃO."
+>
+  <PetDashboard client:only="react" />
+</AppLayout>

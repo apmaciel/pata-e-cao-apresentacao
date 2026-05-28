@@ -1,0 +1,69 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-primary: #06A5D2;
+    --color-primary-dark: #0A3D3D;
+    --color-primary-light: #E0F5F2;
+    --color-cream: #F7F3E6;
+    --color-cream-tan: #E8D49E;
+    --color-footer: #3B2315;
+    --color-accent: #F59E0B;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  body {
+    @apply font-sans;
+  }
+
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center px-6 py-3 rounded-lg bg-primary text-white font-semibold transition-colors duration-200 hover:bg-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center px-6 py-3 rounded-lg border-2 border-primary text-primary font-semibold transition-colors duration-200 hover:bg-primary hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2;
+  }
+
+  .card {
+    @apply bg-white rounded-lg shadow-md p-6 transition-shadow duration-200 hover:shadow-lg;
+  }
+
+  .skeleton {
+    @apply animate-pulse bg-gray-200 rounded;
+  }
+
+  .skip-to-content:focus-visible {
+    @apply absolute left-2 top-2 z-[200] -translate-y-full rounded bg-primary px-4 py-2 font-display font-bold text-sm uppercase tracking-wide text-white transition-transform duration-200;
+  }
+
+  .skip-to-content:focus-visible {
+    @apply translate-y-0;
+  }
+}

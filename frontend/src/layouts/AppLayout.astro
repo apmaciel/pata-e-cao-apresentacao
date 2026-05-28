@@ -1,0 +1,21 @@
+---
+import Layout from './Layout.astro';
+import Header from '../components/Header';
+import Footer from '../components/Footer';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const { title, description } = Astro.props;
+---
+
+<Layout title={title} description={description}>
+  <a href="#main-content" class="skip-to-content">Skip to content</a>
+  <Header client:only="react" />
+  <main id="main-content" class="min-h-screen pt-20">
+    <slot />
+  </main>
+  <Footer client:only="react" />
+</Layout>

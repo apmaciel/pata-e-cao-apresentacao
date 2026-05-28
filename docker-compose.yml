@@ -1,0 +1,161 @@
+services:
+  # ---------------------------------------------------------------------------
+  # PostgreSQL 16 — Primary relational datastore
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgres:16
+    container_name: pata_cao_mvp_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: dev
+      POSTGRES_DB: pata_cao
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # No /docker-entrypoint-initdb.d/ mount: schema is owned by the
+      # backend's migration runner (backend/migrations/*.sql, tracked in
+      # the schema_migrations table) so dev and prod share one code path.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d pata_cao"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ---------------------------------------------------------------------------
+  # Typesense — full-text, faceted, typo-tolerant provider search.
+  # API key defaults to "dev-api-key"; override via TYPESENSE_API_KEY in .env.
+  # ---------------------------------------------------------------------------
+  typesense:
+    image: typesense/typesense:27.1
+    container_name: pata_cao_mvp_typesense
+    restart: unless-stopped
+    ports:
+      - "8108:8108"
+    # Resolve the container's bridge IP at boot and pass it as
+    # --peering-address. Without this, Typesense's default interface
+    # autodetect can pick an ingress/overlay address that Raft cannot
+    # reach, and the node loops on "Refusing concurrent configuration
+    # changing" / "Node not ready yet (known_applied_index is 0)".
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        PEER_IP=$$(hostname -i | awk '{print $$1}')
+        echo "typesense: peering on $$PEER_IP"
+        exec /opt/typesense-server \
+          --data-dir=/data \
+          --api-key=${TYPESENSE_API_KEY:-dev-api-key} \
+          --enable-cors \
+          --reset-peers-on-error \
+          --peering-address="$$PEER_IP"
+    volumes:
+      - typesense_data:/data
+    # The typesense:27.1 image does NOT include curl or wget, so we can't
+    # hit /health via an HTTP client. Instead use bash's /dev/tcp to confirm
+    # the API port is accepting connections — that's enough to gate
+    # depends_on, and a deeper health check is unnecessary for a single-node
+    # dev cluster (Raft state is reported in the container logs).
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8108"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # ---------------------------------------------------------------------------
+  # SeaweedFS — distributed object storage (runs by default)
+  # Runs master + volume + filer in a single container for local dev.
+  # Filer HTTP API on :8888 — PUT/GET /path/to/file
+  # ---------------------------------------------------------------------------
+  seaweedfs:
+    image: chrislusf/seaweedfs:latest
+    container_name: pata_cao_mvp_seaweedfs
+    restart: unless-stopped
+    ports:
+      - "9333:9333"   # master (optional, for weed shell / admin)
+      - "8888:8888"   # filer — backend SEAWEEDFS_URL points here
+    command: >
+      server
+      -dir=/data
+      -filer=true
+      -filer.port=8888
+      -master.port=9333
+      -volume.port=8080
+    volumes:
+      - seaweedfs_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "grep -q weed /proc/1/cmdline"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ---------------------------------------------------------------------------
+  # Go/Echo Backend
+  # env_file is optional — all required vars are set in environment below.
+  # Copy backend/.env.example → backend/.env to override any of these defaults.
+  # ---------------------------------------------------------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: pata_cao_mvp_backend
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      typesense:
+        condition: service_healthy
+      seaweedfs:
+        condition: service_healthy
+    env_file:
+      - path: ./backend/.env
+        required: false
+    environment:
+      PORT: "8080"
+      DATABASE_URL: postgres://postgres:dev@postgres:5432/pata_cao?sslmode=disable
+      MIGRATIONS_DIR: /app/migrations
+      IMAGE_STORAGE_TYPE: seaweedfs
+      IMAGE_STORAGE_PATH: /app/data/images
+      SEAWEEDFS_URL: http://seaweedfs:8888
+      TYPESENSE_URL: http://typesense:8108
+      TYPESENSE_API_KEY: dev-api-key
+      CORS_ORIGINS: http://localhost:3000
+      # JWT_SECRET must be overridden in backend/.env for security
+      JWT_SECRET: change-me-in-production-use-32-char-minimum-abcdefgh
+    volumes:
+      - backend_images:/app/data/images
+
+  # ---------------------------------------------------------------------------
+  # Astro/React Frontend — static site served by nginx
+  # PUBLIC_API_URL is a build-time ARG baked into the Astro static bundle.
+  # ---------------------------------------------------------------------------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        PUBLIC_API_URL: http://localhost:8080
+    container_name: pata_cao_mvp_frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+# -----------------------------------------------------------------------------
+# Named Volumes
+# -----------------------------------------------------------------------------
+volumes:
+  postgres_data:
+    driver: local
+  backend_images:
+    driver: local
+  typesense_data:
+    driver: local
+  seaweedfs_data:
+    driver: local

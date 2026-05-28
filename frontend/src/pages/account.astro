@@ -1,0 +1,16 @@
+---
+import '../i18n.config';
+import AppLayout from '../layouts/AppLayout.astro';
+import UserProfile from '../components/UserProfile';
+---
+
+<AppLayout
+  title="My Profile | PATA & CÃO"
+  description="View and edit your PATA & CÃO profile."
+>
+  <div class="pt-24 pb-8">
+    <div class="max-w-2xl mx-auto px-4">
+      <UserProfile client:only="react" />
+    </div>
+  </div>
+</AppLayout>

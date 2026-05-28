@@ -1,0 +1,31 @@
+---
+import '../../i18n.config';
+import Layout from '../../layouts/Layout.astro';
+import ProviderApplyForm from '../../components/ProviderApplyForm';
+---
+
+<Layout
+  title="Seja um Parceiro Pet — PATA & CÃO"
+  description="Cadastre-se como parceiro pet verificado da plataforma PATA & CÃO."
+>
+  <main class="min-h-screen bg-cream">
+    <!-- Top brand bar -->
+    <div class="bg-white border-b border-gray-100">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex justify-center">
+        <a href="/" class="flex-shrink-0">
+          <img
+            src="/pec-logo.jpeg"
+            alt="PATA & CÃO"
+            width={120}
+            height={48}
+            class="h-14 w-auto object-contain"
+          />
+        </a>
+      </div>
+    </div>
+
+    <div class="py-10 sm:py-14 px-4 sm:px-6 lg:px-8">
+      <ProviderApplyForm client:only="react" />
+    </div>
+  </main>
+</Layout>

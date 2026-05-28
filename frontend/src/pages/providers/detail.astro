@@ -1,0 +1,11 @@
+---
+import AppLayout from '../../layouts/AppLayout.astro';
+import ProviderPublicProfile from '../../components/ProviderPublicProfile';
+---
+
+<AppLayout
+  title="Perfil do Prestador — PATA & CÃO"
+  description="Visualize o perfil completo do prestador de serviços pet."
+>
+  <ProviderPublicProfile client:only="react" />
+</AppLayout>

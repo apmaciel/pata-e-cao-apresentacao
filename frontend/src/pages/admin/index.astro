@@ -1,0 +1,11 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import AdminShell from '../../components/AdminShell';
+---
+
+<AdminLayout
+  title="Painel Administrativo — PATA & CÃO"
+  description="Gerencie os prestadores de serviço da plataforma PATA & CÃO."
+>
+  <AdminShell client:only="react" />
+</AdminLayout>

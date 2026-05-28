@@ -1,0 +1,18 @@
+---
+import '../i18n.config';
+import AppLayout from '../layouts/AppLayout.astro';
+import SearchHero from '../components/SearchHero';
+import ProviderCarousel from '../components/ProviderCarousel';
+import ServicesSection from '../components/ServicesSection';
+import AboutSection from '../components/AboutSection';
+---
+
+<AppLayout
+  title="PATA & CÃO — Plataforma Pet"
+  description="Encontre prestadores de serviços pet verificados e confiáveis: hospedagem, passeadores e adestradores."
+>
+  <SearchHero client:only="react" />
+  <ProviderCarousel client:only="react" />
+  <ServicesSection client:only="react" />
+  <AboutSection client:only="react" />
+</AppLayout>

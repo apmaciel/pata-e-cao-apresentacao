@@ -1,0 +1,11 @@
+---
+import AppLayout from '../../layouts/AppLayout.astro';
+import PetDetailPage from '../../components/PetDetailPage';
+---
+
+<AppLayout
+  title="Detalhes do Pet — PATA & CÃO"
+  description="Visualize e edite os detalhes do seu pet na plataforma PATA & CÃO."
+>
+  <PetDetailPage client:only="react" />
+</AppLayout>

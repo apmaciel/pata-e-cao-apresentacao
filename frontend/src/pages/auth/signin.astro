@@ -1,0 +1,23 @@
+---
+import '../../i18n.config';
+import Layout from '../../layouts/Layout.astro';
+import AuthForm from '../../components/AuthForm';
+---
+
+<Layout
+  title="Entrar — PATA & CÃO"
+  description="Acesse sua conta PATA & CÃO."
+>
+  <div class="min-h-screen bg-cream flex flex-col items-center justify-center px-4 py-12">
+    <!-- Logo -->
+    <a href="/" class="flex items-center gap-2 mb-8">
+      <span class="text-3xl">🐾</span>
+      <span class="font-bold text-2xl text-primary-dark tracking-tight">PATA &amp; CÃO</span>
+    </a>
+
+    <!-- Card -->
+    <div class="w-full max-w-md bg-white rounded-2xl shadow-md px-8 py-10">
+      <AuthForm mode="signin" client:only="react" />
+    </div>
+  </div>
+</Layout>

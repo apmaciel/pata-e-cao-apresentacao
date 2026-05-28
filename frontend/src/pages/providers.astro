@@ -1,0 +1,12 @@
+---
+import '../i18n.config';
+import AppLayout from '../layouts/AppLayout.astro';
+import SearchProviders from '../components/SearchProviders';
+---
+
+<AppLayout
+  title="Prestadores — PATA & CÃO"
+  description="Encontre e filtre prestadores de serviços pet verificados perto de você."
+>
+  <SearchProviders client:only="react" />
+</AppLayout>
