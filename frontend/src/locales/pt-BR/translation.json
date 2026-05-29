@@ -547,6 +547,14 @@
     "cancel": "Cancelar",
     "save": "Salvar",
     "saved": "Perfil atualizado com sucesso!",
-    "galleryFull": "Máximo de {{max}} imagens na galeria"
+    "galleryFull": "Máximo de {{max}} imagens na galeria",
+    "deleteAccount": "Excluir minha conta",
+    "deleteAccountDescription": "Esta ação é irreversível. Todos os seus dados, incluindo perfil, galeria, avaliações e reservas serão permanentemente removidos.",
+    "deleteAccountConfirm": "Para confirmar, digite sua senha:",
+    "deleteAccountPlaceholder": "Digite sua senha",
+    "deleteAccountButton": "Sim, excluir minha conta",
+    "deleteAccountCancel": "Cancelar",
+    "deleteAccountError": "Senha incorreta. Tente novamente.",
+    "deleteAccountSuccess": "Conta excluída com sucesso. Você será redirecionado."
   }
 }

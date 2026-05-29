@@ -6,6 +6,8 @@ import (
 	"log"
 	"time"
 
+	"golang.org/x/crypto/bcrypt"
+
 	"pata-cao/internal/models"
 	"pata-cao/internal/repository/postgres"
 )
@@ -205,6 +207,43 @@ func (s *ProviderService) RejectProvider(ctx context.Context, id, adminID, reaso
 	}
 
 	return s.providers.UpdateStatus(ctx, id, "rejected", adminID, reason)
+}
+
+// DeleteOwnProvider allows an approved provider to permanently delete their own
+// account. The caller must provide their password for confirmation — the password
+// is verified against the stored hash before proceeding. This cascades to delete
+// the user, provider, and all related data (bookings, reviews, tokens, etc.).
+// Also removes the provider from the Typesense index if present.
+func (s *ProviderService) DeleteOwnProvider(ctx context.Context, userID, password string) error {
+	user, err := s.users.GetByID(ctx, userID)
+	if err != nil {
+		return fmt.Errorf("NOT_FOUND: user not found")
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
+		return fmt.Errorf("INVALID_CREDENTIALS: password is incorrect")
+	}
+
+	provider, err := s.providers.GetByUserID(ctx, userID)
+	if err != nil {
+		return fmt.Errorf("PROVIDER_NOT_FOUND: no provider profile for this user")
+	}
+
+	// Only approved (or suspended) providers may self-delete. Pending/rejected
+	// providers should go through the admin flow instead.
+	if provider.Status != "approved" && provider.Status != "suspended" {
+		return fmt.Errorf("INVALID_STATUS: only approved providers can delete their account (current: %s)", provider.Status)
+	}
+
+	// Remove from search index first so the provider disappears immediately.
+	s.deleteFromSearch(ctx, provider.ID)
+
+	// Delete the user — cascades to provider and all related data via FK constraints.
+	if err := s.users.Delete(ctx, userID); err != nil {
+		return fmt.Errorf("INTERNAL_ERROR: failed to delete user account")
+	}
+
+	return nil
 }
 
 // DeleteProvider permanently removes a rejected provider and all their

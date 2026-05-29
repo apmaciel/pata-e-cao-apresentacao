@@ -172,6 +172,29 @@ type addGalleryImageRequest struct {
 	ImageID string `json:"imageId" validate:"required"`
 }
 
+type deleteMyProviderRequest struct {
+	Password string `json:"password" validate:"required"`
+}
+
+// DeleteMyProvider handles DELETE /api/providers/me (auth required).
+// Allows an approved provider to permanently delete their own account,
+// with password confirmation as a safety guard.
+func (h *ProviderHandler) DeleteMyProvider(c echo.Context) error {
+	var req deleteMyProviderRequest
+	if err := c.Bind(&req); err != nil {
+		return apiError(c, http.StatusBadRequest, "INVALID_REQUEST", "invalid request body")
+	}
+	if err := h.validate.Struct(req); err != nil {
+		return validationError(c, err)
+	}
+
+	if err := h.providers.DeleteOwnProvider(c.Request().Context(), mw.GetUserID(c), req.Password); err != nil {
+		code, errCode, msg := parseServiceError(err)
+		return apiError(c, code, errCode, msg)
+	}
+	return c.JSON(http.StatusOK, map[string]string{"message": "account deleted successfully"})
+}
+
 // AddGalleryImage handles POST /api/providers/me/gallery (auth required).
 // Adds an image to the provider's gallery, capping at 15.
 func (h *ProviderHandler) AddGalleryImage(c echo.Context) error {

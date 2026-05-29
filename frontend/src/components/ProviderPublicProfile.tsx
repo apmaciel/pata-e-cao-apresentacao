@@ -4,7 +4,7 @@ import '../i18n.config';
 import { providers, authReady, type ProviderDetail } from '../services/api';
 import { API_URL } from '../utils/config';
 import { serviceLabel } from '../utils/adminHelpers';
-import { FiArrowLeft, FiMapPin, FiLink, FiCheck, FiX, FiEdit2, FiLinkedin, FiInstagram, FiGlobe, FiMail, FiMessageCircle, FiCheckCircle } from 'react-icons/fi';
+import { FiArrowLeft, FiMapPin, FiLink, FiCheck, FiX, FiEdit2, FiLinkedin, FiInstagram, FiGlobe, FiMail, FiMessageCircle, FiCheckCircle, FiTrash2, FiAlertTriangle } from 'react-icons/fi';
 import ProviderProfileEdit from './ProviderProfileEdit';
 
 const SOCIAL_PLATFORMS: { key: string; icon: typeof FiLinkedin }[] = [
@@ -27,6 +27,12 @@ export default function ProviderPublicProfile() {
   const [lightbox, setLightbox] = useState<string | null>(null);
   const [contactOpen, setContactOpen] = useState(false);
   const contactRef = useRef<HTMLDivElement>(null);
+
+  // Delete account state.
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
   // Close contact popover on outside click + ESC.
   useEffect(() => {
@@ -81,6 +87,24 @@ export default function ProviderPublicProfile() {
     });
     return () => { cancelled = true; };
   }, [providerId, t]);
+
+  // Delete account handler.
+  async function handleDeleteAccount() {
+    if (!deletePassword) return;
+    setDeleting(true);
+    setDeleteError('');
+    try {
+      await providers.deleteMe(deletePassword);
+      // Clear session and redirect to home.
+      const { auth } = await import('../services/api');
+      await auth.logout();
+      window.location.href = '/';
+    } catch (err: unknown) {
+      setDeleteError(err instanceof Error ? err.message : t('providerProfile.deleteAccountError'));
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   if (loading) {
     return (
@@ -373,8 +397,89 @@ export default function ProviderPublicProfile() {
               {t('providerProfile.editProfile')}
             </button>
           )}
+
+          {/* Own profile — delete account button (only after onboarding is complete) */}
+          {isOwn && !editing && provider.onboardingCompletedAt && (
+            <div className="pt-4 border-t border-gray-100">
+              <button
+                type="button"
+                onClick={() => { setShowDeleteModal(true); setDeletePassword(''); setDeleteError(''); }}
+                className="w-full border-2 border-red-200 text-red-600 rounded-xl px-4 py-3 text-sm font-display font-bold uppercase tracking-wide hover:bg-red-50 transition-colors flex items-center justify-center gap-2"
+              >
+                <FiTrash2 className="w-4 h-4" />
+                {t('providerProfile.deleteAccount')}
+              </button>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Delete account confirmation modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-[120] bg-black/60 flex items-center justify-center p-4" onClick={() => setShowDeleteModal(false)}>
+          <div
+            className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 sm:p-8"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="text-center mb-6">
+              <div className="w-14 h-14 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
+                <FiAlertTriangle className="w-7 h-7 text-red-600" />
+              </div>
+              <h3 className="font-display font-black text-xl text-footer mb-2">
+                {t('providerProfile.deleteAccount')}
+              </h3>
+              <p className="text-sm text-footer/60">
+                {t('providerProfile.deleteAccountDescription')}
+              </p>
+            </div>
+
+            {deleteError && (
+              <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700 mb-4">
+                {deleteError}
+              </div>
+            )}
+
+            <label className="block text-sm font-medium text-footer/70 mb-2">
+              {t('providerProfile.deleteAccountConfirm')}
+            </label>
+            <input
+              type="password"
+              value={deletePassword}
+              onChange={(e) => setDeletePassword(e.target.value)}
+              placeholder={t('providerProfile.deleteAccountPlaceholder')}
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 text-footer placeholder-gray-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:border-transparent text-sm mb-6"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && deletePassword && !deleting) {
+                  handleDeleteAccount();
+                }
+              }}
+            />
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setShowDeleteModal(false)}
+                className="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-footer/70 text-sm font-display font-bold uppercase tracking-wide hover:bg-gray-50 transition-colors"
+              >
+                {t('providerProfile.deleteAccountCancel')}
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteAccount}
+                disabled={!deletePassword || deleting}
+                className="flex-1 px-4 py-3 rounded-xl bg-red-600 text-white text-sm font-display font-bold uppercase tracking-wide hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+              >
+                {deleting ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  t('providerProfile.deleteAccountButton')
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Lightbox */}
       {lightbox && (

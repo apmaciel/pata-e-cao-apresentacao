@@ -143,6 +143,7 @@ func main() {
 	providers.GET("", providerH.ListProviders)                                    // public
 	providers.GET("/me", providerH.GetMyProvider, jwtMw)                          // auth required — own profile
 	providers.PUT("/me", providerH.UpdateMyProvider, jwtMw)                       // auth required — edit own profile
+	providers.DELETE("/me", providerH.DeleteMyProvider, jwtMw)                    // auth required — delete own account (password confirmation)
 	providers.POST("/me/gallery", providerH.AddGalleryImage, jwtMw)               // auth required — add gallery image
 	providers.DELETE("/me/gallery/:imageId", providerH.RemoveGalleryImage, jwtMw) // auth required
 	providers.GET("/:id", providerH.GetProvider)                                  // public (approved only)

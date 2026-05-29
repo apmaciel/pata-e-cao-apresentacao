@@ -60,7 +60,7 @@ func parseServiceError(err error) (int, string, string) {
 		return http.StatusUnauthorized, code, detail
 	case "FORBIDDEN", "ONBOARDING_REQUIRED":
 		return http.StatusForbidden, code, detail
-	case "PROVIDER_NOT_FOUND":
+	case "NOT_FOUND", "PROVIDER_NOT_FOUND":
 		return http.StatusNotFound, code, detail
 	case "PROVIDER_NOT_APPROVED":
 		return http.StatusForbidden, code, detail

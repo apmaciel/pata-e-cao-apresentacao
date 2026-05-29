@@ -715,6 +715,14 @@ export const providers = {
       method: 'DELETE',
     });
   },
+
+  // Delete own provider account with password confirmation.
+  deleteMe: (password: string): Promise<{ message: string }> => {
+    return apiFetch<{ message: string }>('/api/providers/me', {
+      method: 'DELETE',
+      body: JSON.stringify({ password }),
+    });
+  },
 };
 
 
@@ -853,3 +861,4 @@ export const bookings = {
     });
   },
 };
+
