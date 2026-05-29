@@ -200,26 +200,6 @@ func (h *AdminHandler) RegenerateOnboardingToken(c echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{"onboardingToken": rawToken})
 }
 
-// GetPetSpeciesDistribution handles GET /api/admin/stats/pets/species (admin only).
-func (h *AdminHandler) GetPetSpeciesDistribution(c echo.Context) error {
-	points, err := h.admin.GetPetSpeciesDistribution(c.Request().Context())
-	if err != nil {
-		return apiError(c, http.StatusInternalServerError, "INTERNAL_ERROR", "failed to load pet species data")
-	}
-	return c.JSON(http.StatusOK, points)
-}
-
-// GetPetAgeDistribution handles GET /api/admin/stats/pets/ages (admin only).
-// Query params: species (optional filter).
-func (h *AdminHandler) GetPetAgeDistribution(c echo.Context) error {
-	species := c.QueryParam("species")
-	points, err := h.admin.GetPetAgeDistribution(c.Request().Context(), species)
-	if err != nil {
-		return apiError(c, http.StatusInternalServerError, "INTERNAL_ERROR", "failed to load pet age data")
-	}
-	return c.JSON(http.StatusOK, points)
-}
-
 // ExportProvidersCSV streams a CSV file of all providers.
 // Optional ?status=approved,pending filter (comma-separated).
 // GET /api/admin/providers/export

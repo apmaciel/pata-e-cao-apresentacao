@@ -50,7 +50,6 @@ func main() {
 
 	// ── Repositories ─────────────────────────────────────────────────────────
 	userRepo := postgres.NewUserRepository(db)
-	petRepo := postgres.NewPetRepository(db)
 	providerRepo := postgres.NewProviderRepository(db)
 	onboardingTokenRepo := postgres.NewOnboardingTokenRepository(db)
 	bookingRepo := postgres.NewBookingRepository(db)
@@ -80,9 +79,8 @@ func main() {
 		cfg.JWTSecret, cfg.JWTAccessExpiry, cfg.JWTRefreshExpiry, cfg.PasswordResetTTL,
 		cfg.AdminEmails,
 	)
-	petSvc := service.NewPetService(petRepo, bookingRepo)
 	providerSvc := service.NewProviderService(providerRepo, searchSvc, onboardingTokenRepo, userRepo)
-	bookingSvc := service.NewBookingService(bookingRepo, providerRepo, petRepo)
+	bookingSvc := service.NewBookingService(bookingRepo, providerRepo)
 	reviewSvc := service.NewReviewService(reviewRepo, bookingRepo, providerRepo, searchSvc)
 	imageSvc, err := service.NewImageService(cfg.LRUCacheSize, cfg.ImageStorageType, cfg.ImageStoragePath, cfg.SeaweedFSURL)
 	if err != nil {
@@ -92,7 +90,6 @@ func main() {
 
 	// ── Handlers ─────────────────────────────────────────────────────────────
 	authH := handler.NewAuthHandler(authSvc, bookingRepo, cfg.CookieSecure, cfg.JWTRefreshExpiry, cfg.FrontendURL, cfg.DevMode)
-	petH := handler.NewPetHandler(petSvc)
 	providerH := handler.NewProviderHandler(providerSvc, reviewSvc)
 	bookingH := handler.NewBookingHandler(bookingSvc)
 	reviewH := handler.NewReviewHandler(reviewSvc)
@@ -144,20 +141,6 @@ func main() {
 	// Users (profile access gated by ownership, admin role, or booking relationship)
 	api.GET("/users/:id", authH.GetUserProfile, jwtMw)
 
-	// Pets (all require auth)
-	pets := api.Group("/pets", jwtMw)
-	pets.GET("", petH.ListPets)
-	pets.POST("", petH.CreatePet)
-	pets.GET("/:id", petH.GetPet)
-	pets.PUT("/:id", petH.UpdatePet)
-	pets.DELETE("/:id", petH.DeletePet)
-	pets.GET("/:id/health", petH.GetHealthRecord)
-	pets.PUT("/:id/health", petH.UpdateHealthRecord)
-	pets.GET("/:id/images", petH.ListImages)
-	pets.POST("/:id/images", petH.AddImage)
-	pets.DELETE("/:id/images/:imageId", petH.DeleteImage)
-	pets.PUT("/:id/images/:imageId/primary", petH.SetPrimaryImage)
-
 	// Providers
 	providers := api.Group("/providers")
 	providers.GET("", providerH.ListProviders)                                    // public
@@ -193,8 +176,6 @@ func main() {
 	adminGroup := api.Group("/admin", jwtMw, mw.RequireAdmin())
 	adminGroup.GET("/stats", adminH.GetStats)
 	adminGroup.GET("/stats/providers", adminH.GetProviderGrowth)
-	adminGroup.GET("/stats/pets/species", adminH.GetPetSpeciesDistribution)
-	adminGroup.GET("/stats/pets/ages", adminH.GetPetAgeDistribution)
 	adminGroup.GET("/providers", adminH.ListAllProviders)          // paginated, optional ?status=
 	adminGroup.GET("/providers/export", adminH.ExportProvidersCSV) // CSV download, optional ?status=
 	adminGroup.GET("/providers/pending", adminH.GetPendingProviders)

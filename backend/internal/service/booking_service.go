@@ -13,19 +13,16 @@ import (
 type BookingService struct {
 	bookings  postgres.BookingRepository
 	providers postgres.ProviderRepository
-	pets      postgres.PetRepository
 }
 
 // NewBookingService creates a new BookingService.
 func NewBookingService(
 	bookings postgres.BookingRepository,
 	providers postgres.ProviderRepository,
-	pets postgres.PetRepository,
 ) *BookingService {
 	return &BookingService{
 		bookings:  bookings,
 		providers: providers,
-		pets:      pets,
 	}
 }
 
@@ -38,15 +35,6 @@ func (s *BookingService) CreateBooking(ctx context.Context, ownerID string, b *m
 	}
 	if provider.Status != "approved" {
 		return fmt.Errorf("PROVIDER_NOT_APPROVED: provider is not available for bookings")
-	}
-
-	// Verify pet belongs to owner.
-	pet, err := s.pets.GetByID(ctx, b.PetID)
-	if err != nil {
-		return fmt.Errorf("PET_NOT_FOUND: pet does not exist")
-	}
-	if pet.OwnerID != ownerID {
-		return fmt.Errorf("FORBIDDEN: you do not own this pet")
 	}
 
 	if b.StartDate.IsZero() || b.EndDate.IsZero() {

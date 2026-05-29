@@ -25,7 +25,6 @@ func NewBookingHandler(bookings *service.BookingService) *BookingHandler {
 
 type createBookingRequest struct {
 	ProviderID  string    `json:"providerId" validate:"required"`
-	PetID       string    `json:"petId" validate:"required"`
 	ServiceType string    `json:"serviceType" validate:"required,min=1,max=50"`
 	StartDate   time.Time `json:"startDate" validate:"required"`
 	EndDate     time.Time `json:"endDate" validate:"required"`
@@ -45,7 +44,6 @@ func (h *BookingHandler) CreateBooking(c echo.Context) error {
 
 	b := &models.Booking{
 		ProviderID:  req.ProviderID,
-		PetID:       req.PetID,
 		ServiceType: req.ServiceType,
 		StartDate:   req.StartDate,
 		EndDate:     req.EndDate,
