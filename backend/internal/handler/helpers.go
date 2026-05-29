@@ -60,13 +60,11 @@ func parseServiceError(err error) (int, string, string) {
 		return http.StatusUnauthorized, code, detail
 	case "FORBIDDEN", "ONBOARDING_REQUIRED":
 		return http.StatusForbidden, code, detail
-	case "PROVIDER_NOT_FOUND", "BOOKING_NOT_FOUND":
+	case "PROVIDER_NOT_FOUND":
 		return http.StatusNotFound, code, detail
-	case "BOOKING_CONFLICT":
-		return http.StatusConflict, code, detail
 	case "PROVIDER_NOT_APPROVED":
 		return http.StatusForbidden, code, detail
-	case "INVALID_STATUS", "INVALID_TRANSITION", "BOOKING_NOT_COMPLETED":
+	case "INVALID_STATUS", "INVALID_TRANSITION":
 		return http.StatusUnprocessableEntity, code, detail
 	case "SEARCH_DISABLED":
 		return http.StatusServiceUnavailable, code, detail

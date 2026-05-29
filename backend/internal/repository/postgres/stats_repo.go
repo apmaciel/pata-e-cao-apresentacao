@@ -10,16 +10,14 @@ import (
 
 // AdminStats holds aggregate counts for the admin dashboard.
 type AdminStats struct {
-	TotalUsers            int            `json:"totalUsers"`
-	UsersByRole           map[string]int `json:"usersByRole"`
-	TotalProviders        int            `json:"totalProviders"`
-	ProvidersByStatus     map[string]int `json:"providersByStatus"`
-	TotalBookings         int            `json:"totalBookings"`
-	BookingsByStatus      map[string]int `json:"bookingsByStatus"`
-	TotalPets             int            `json:"totalPets"`
-	TotalReviews          int            `json:"totalReviews"`
-	NewUsersLast30Days    int            `json:"newUsersLast30Days"`
-	NewProvidersLast30Days int           `json:"newProvidersLast30Days"`
+	TotalUsers             int            `json:"totalUsers"`
+	UsersByRole            map[string]int `json:"usersByRole"`
+	TotalProviders         int            `json:"totalProviders"`
+	ProvidersByStatus      map[string]int `json:"providersByStatus"`
+	TotalPets              int            `json:"totalPets"`
+	TotalReviews           int            `json:"totalReviews"`
+	NewUsersLast30Days     int            `json:"newUsersLast30Days"`
+	NewProvidersLast30Days int            `json:"newProvidersLast30Days"`
 }
 
 // ProviderGrowthPoint is a single point in the provider growth time-series.
@@ -77,8 +75,6 @@ func (r *statsRepo) GetStats(ctx context.Context) (*AdminStats, error) {
 		SELECT
 			(SELECT COUNT(*) FROM users)                                      AS total_users,
 			(SELECT COUNT(*) FROM providers)                                  AS total_providers,
-			(SELECT COUNT(*) FROM bookings)                                   AS total_bookings,
-			(SELECT COUNT(*) FROM pets)                                       AS total_pets,
 			(SELECT COUNT(*) FROM reviews)                                    AS total_reviews,
 			(SELECT COUNT(*) FROM users WHERE created_at >= NOW() - INTERVAL '30 days')     AS new_users_30d,
 			(SELECT COUNT(*) FROM providers WHERE created_at >= NOW() - INTERVAL '30 days') AS new_providers_30d
@@ -86,8 +82,7 @@ func (r *statsRepo) GetStats(ctx context.Context) (*AdminStats, error) {
 
 	var stats AdminStats
 	if err := r.db.QueryRowContext(ctx, query).Scan(
-		&stats.TotalUsers, &stats.TotalProviders, &stats.TotalBookings,
-		&stats.TotalPets, &stats.TotalReviews,
+		&stats.TotalUsers, &stats.TotalProviders, &stats.TotalReviews,
 		&stats.NewUsersLast30Days, &stats.NewProvidersLast30Days,
 	); err != nil {
 		return nil, err
@@ -95,15 +90,11 @@ func (r *statsRepo) GetStats(ctx context.Context) (*AdminStats, error) {
 
 	stats.UsersByRole = map[string]int{}
 	stats.ProvidersByStatus = map[string]int{}
-	stats.BookingsByStatus = map[string]int{}
 
 	if err := r.scanGroupBy(ctx, `SELECT role, COUNT(*) FROM users GROUP BY role`, stats.UsersByRole); err != nil {
 		return nil, err
 	}
 	if err := r.scanGroupBy(ctx, `SELECT status, COUNT(*) FROM providers GROUP BY status`, stats.ProvidersByStatus); err != nil {
-		return nil, err
-	}
-	if err := r.scanGroupBy(ctx, `SELECT status, COUNT(*) FROM bookings GROUP BY status`, stats.BookingsByStatus); err != nil {
 		return nil, err
 	}
 

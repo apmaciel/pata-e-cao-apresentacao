@@ -23,9 +23,8 @@ func NewReviewHandler(reviews *service.ReviewService) *ReviewHandler {
 }
 
 type createReviewRequest struct {
-	BookingID string  `json:"bookingId" validate:"required"`
-	Rating    int     `json:"rating" validate:"required,min=1,max=5"`
-	Text      *string `json:"text"`
+	Rating int     `json:"rating" validate:"required,min=1,max=5"`
+	Text   *string `json:"text"`
 }
 
 // CreateReview handles POST /api/reviews (auth required, owner role)
@@ -39,9 +38,8 @@ func (h *ReviewHandler) CreateReview(c echo.Context) error {
 	}
 
 	r := &models.Review{
-		BookingID: req.BookingID,
-		Rating:    req.Rating,
-		Text:      req.Text,
+		Rating: req.Rating,
+		Text:   req.Text,
 	}
 
 	if err := h.reviews.CreateReview(c.Request().Context(), mw.GetUserID(c), r); err != nil {

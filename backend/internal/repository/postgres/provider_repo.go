@@ -459,9 +459,6 @@ func (r *providerRepo) Delete(ctx context.Context, id string) error {
 	if _, err := tx.ExecContext(ctx, `DELETE FROM provider_verification_audit WHERE provider_id = $1`, id); err != nil {
 		return err
 	}
-	if _, err := tx.ExecContext(ctx, `DELETE FROM bookings WHERE provider_id = $1`, id); err != nil {
-		return err
-	}
 	if _, err := tx.ExecContext(ctx, `DELETE FROM reviews WHERE provider_id = $1`, id); err != nil {
 		return err
 	}

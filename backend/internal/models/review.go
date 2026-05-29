@@ -6,7 +6,6 @@ import "time"
 // Status values: pending, approved, rejected, flagged.
 type Review struct {
 	ID               string    `db:"id" json:"id"`
-	BookingID        string    `db:"booking_id" json:"bookingId"`
 	ReviewerID       string    `db:"reviewer_id" json:"reviewerId"`
 	ProviderID       string    `db:"provider_id" json:"providerId"`
 	Rating           int       `db:"rating" json:"rating"`

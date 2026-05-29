@@ -11,7 +11,6 @@ import (
 // ReviewService handles review business logic.
 type ReviewService struct {
 	reviews   postgres.ReviewRepository
-	bookings  postgres.BookingRepository
 	providers postgres.ProviderRepository
 	search    SearchService // nil disables provider re-indexing after rating updates
 }
@@ -20,11 +19,10 @@ type ReviewService struct {
 // Typesense rating sync (the Postgres rating still updates either way).
 func NewReviewService(
 	reviews postgres.ReviewRepository,
-	bookings postgres.BookingRepository,
 	providers postgres.ProviderRepository,
 	search SearchService,
 ) *ReviewService {
-	return &ReviewService{reviews: reviews, bookings: bookings, providers: providers, search: search}
+	return &ReviewService{reviews: reviews, providers: providers, search: search}
 }
 
 // CreateReview creates a review after verifying all preconditions.
@@ -33,26 +31,7 @@ func (s *ReviewService) CreateReview(ctx context.Context, reviewerID string, r *
 		return fmt.Errorf("VALIDATION_ERROR: rating must be between 1 and 5")
 	}
 
-	// Verify booking exists and belongs to reviewer.
-	booking, err := s.bookings.GetByID(ctx, r.BookingID)
-	if err != nil {
-		return fmt.Errorf("BOOKING_NOT_FOUND: booking does not exist")
-	}
-	if booking.OwnerID != reviewerID {
-		return fmt.Errorf("FORBIDDEN: you are not the owner of this booking")
-	}
-	if booking.Status != "completed" {
-		return fmt.Errorf("BOOKING_NOT_COMPLETED: can only review completed bookings")
-	}
-
-	// Check for duplicate review (also enforced at DB level).
-	existing, err := s.reviews.GetByBookingID(ctx, r.BookingID)
-	if err == nil && existing != nil {
-		return fmt.Errorf("REVIEW_EXISTS: a review already exists for this booking")
-	}
-
 	r.ReviewerID = reviewerID
-	r.ProviderID = booking.ProviderID
 
 	if err := s.reviews.Create(ctx, r); err != nil {
 		if isUniqueErr(err) {
@@ -62,7 +41,7 @@ func (s *ReviewService) CreateReview(ctx context.Context, reviewerID string, r *
 	}
 
 	// Recalculate provider rating.
-	go s.recalculateRating(context.Background(), booking.ProviderID)
+	go s.recalculateRating(context.Background(), r.ProviderID)
 
 	return nil
 }

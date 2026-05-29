@@ -52,7 +52,6 @@ func main() {
 	userRepo := postgres.NewUserRepository(db)
 	providerRepo := postgres.NewProviderRepository(db)
 	onboardingTokenRepo := postgres.NewOnboardingTokenRepository(db)
-	bookingRepo := postgres.NewBookingRepository(db)
 	reviewRepo := postgres.NewReviewRepository(db)
 	tokenRepo := postgres.NewTokenRepository(db)
 	passwordResetRepo := postgres.NewPasswordResetRepository(db)
@@ -80,8 +79,7 @@ func main() {
 		cfg.AdminEmails,
 	)
 	providerSvc := service.NewProviderService(providerRepo, searchSvc, onboardingTokenRepo, userRepo)
-	bookingSvc := service.NewBookingService(bookingRepo, providerRepo)
-	reviewSvc := service.NewReviewService(reviewRepo, bookingRepo, providerRepo, searchSvc)
+	reviewSvc := service.NewReviewService(reviewRepo, providerRepo, searchSvc)
 	imageSvc, err := service.NewImageService(cfg.LRUCacheSize, cfg.ImageStorageType, cfg.ImageStoragePath, cfg.SeaweedFSURL)
 	if err != nil {
 		log.Fatalf("image service init failed: %v", err)
@@ -89,9 +87,8 @@ func main() {
 	adminSvc := service.NewAdminService(postgres.NewStatsRepository(db))
 
 	// ── Handlers ─────────────────────────────────────────────────────────────
-	authH := handler.NewAuthHandler(authSvc, bookingRepo, cfg.CookieSecure, cfg.JWTRefreshExpiry, cfg.FrontendURL, cfg.DevMode)
+	authH := handler.NewAuthHandler(authSvc, cfg.CookieSecure, cfg.JWTRefreshExpiry, cfg.FrontendURL, cfg.DevMode)
 	providerH := handler.NewProviderHandler(providerSvc, reviewSvc)
-	bookingH := handler.NewBookingHandler(bookingSvc)
 	reviewH := handler.NewReviewHandler(reviewSvc)
 	imageH := handler.NewImageHandler(imageSvc, cfg.CORSOrigins, cfg.JWTSecret, onboardingTokenRepo)
 	adminH := handler.NewAdminHandler(providerSvc, adminSvc)
@@ -154,14 +151,6 @@ func main() {
 	providers.GET("/:id/reviews", providerH.GetProviderReviews)                   // public
 	providers.POST("/onboarding/validate", onboardingH.ValidateToken)             // public — token is the auth
 	providers.POST("/onboarding/complete", onboardingH.Complete)                  // public — token is the auth
-
-	// Bookings (all require auth)
-	bookings := api.Group("/bookings", jwtMw)
-	bookings.POST("", bookingH.CreateBooking)
-	bookings.GET("", bookingH.ListBookings)
-	bookings.GET("/:id", bookingH.GetBooking)
-	bookings.PUT("/:id/confirm", bookingH.ConfirmBooking)
-	bookings.PUT("/:id/cancel", bookingH.CancelBooking)
 
 	// Reviews (auth required)
 	api.POST("/reviews", reviewH.CreateReview, jwtMw)

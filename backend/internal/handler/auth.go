@@ -8,7 +8,6 @@ import (
 	"github.com/labstack/echo/v4"
 
 	mw "pata-cao/internal/middleware"
-	"pata-cao/internal/repository/postgres"
 	"pata-cao/internal/service"
 )
 
@@ -20,7 +19,6 @@ const refreshCookiePath = "/api/auth"
 // AuthHandler handles authentication endpoints.
 type AuthHandler struct {
 	auth         *service.AuthService
-	bookings     postgres.BookingRepository
 	validate     *validator.Validate
 	cookieSecure bool
 	refreshTTL   time.Duration
@@ -31,7 +29,6 @@ type AuthHandler struct {
 // NewAuthHandler creates a new AuthHandler.
 func NewAuthHandler(
 	auth *service.AuthService,
-	bookings postgres.BookingRepository,
 	cookieSecure bool,
 	refreshTTL time.Duration,
 	frontendURL string,
@@ -39,7 +36,6 @@ func NewAuthHandler(
 ) *AuthHandler {
 	return &AuthHandler{
 		auth:         auth,
-		bookings:     bookings,
 		validate:     validator.New(),
 		cookieSecure: cookieSecure,
 		refreshTTL:   refreshTTL,
@@ -263,24 +259,6 @@ func (h *AuthHandler) GetUserProfile(c echo.Context) error {
 
 	// Admin can read any profile.
 	if callerRole == "admin" {
-		user, err := h.auth.GetUserByID(c.Request().Context(), targetID)
-		if err != nil {
-			code, errCode, msg := parseServiceError(err)
-			return apiError(c, code, errCode, msg)
-		}
-		return c.JSON(http.StatusOK, user)
-	}
-
-	// Provider can read the profile only if they have a confirmed booking
-	// with this owner.
-	if callerRole == "provider" {
-		hasBooking, err := h.bookings.HasConfirmedBooking(c.Request().Context(), callerID, targetID)
-		if err != nil {
-			return apiError(c, http.StatusInternalServerError, "INTERNAL_ERROR", "failed to verify booking relationship")
-		}
-		if !hasBooking {
-			return apiError(c, http.StatusForbidden, "FORBIDDEN", "you do not have a confirmed booking with this user")
-		}
 		user, err := h.auth.GetUserByID(c.Request().Context(), targetID)
 		if err != nil {
 			code, errCode, msg := parseServiceError(err)
