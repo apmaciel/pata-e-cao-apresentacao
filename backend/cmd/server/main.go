@@ -192,6 +192,9 @@ func main() {
 	adminGroup.POST("/cache/invalidate", imageH.InvalidateCache)
 	adminGroup.POST("/search/reindex", searchH.Reindex)
 
+	// Search autocomplete (public)
+	api.GET("/search/autocomplete", searchH.Autocomplete)
+
 	// ── Graceful shutdown ────────────────────────────────────────────────────
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt)

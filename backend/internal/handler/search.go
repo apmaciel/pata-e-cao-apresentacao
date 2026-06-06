@@ -29,3 +29,16 @@ func (h *SearchHandler) Reindex(c echo.Context) error {
 	}
 	return c.JSON(http.StatusOK, map[string]int{"indexed": n})
 }
+
+// Autocomplete handles GET /api/search/autocomplete?q=... (public).
+// Returns up to 5 lightweight provider suggestions for search-as-you-type.
+func (h *SearchHandler) Autocomplete(c echo.Context) error {
+	q := c.QueryParam("q")
+	suggestions, err := h.providers.AutocompleteProviders(c.Request().Context(), q)
+	if err != nil {
+		return apiError(c, http.StatusInternalServerError, "INTERNAL_ERROR", "autocomplete failed")
+	}
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"suggestions": suggestions,
+	})
+}

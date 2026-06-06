@@ -101,6 +101,22 @@ func (s *ProviderService) ListProviders(ctx context.Context, params SearchParams
 	return s.listFromPostgres(ctx, params)
 }
 
+// AutocompleteProviders returns lightweight suggestions for search-as-you-type.
+// Delegates to Typesense when configured; falls back to a PostgreSQL ILIKE query.
+func (s *ProviderService) AutocompleteProviders(ctx context.Context, query string) ([]models.AutocompleteSuggestion, error) {
+	if query == "" {
+		return []models.AutocompleteSuggestion{}, nil
+	}
+	if s.search != nil {
+		suggestions, err := s.search.AutocompleteProviders(ctx, query)
+		if err == nil {
+			return suggestions, nil
+		}
+		log.Printf("search: typesense autocomplete unavailable, falling back to postgres: %v", err)
+	}
+	return s.providers.AutocompleteApproved(ctx, query)
+}
+
 func (s *ProviderService) listFromPostgres(ctx context.Context, params SearchParams) (*SearchResult, error) {
 	page := params.Page
 	if page <= 0 {

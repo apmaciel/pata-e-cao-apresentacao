@@ -739,6 +739,25 @@ export const providers = {
 };
 
 
+// ─── Search Autocomplete ──────────────────────────────────────────────────────
+
+export interface AutocompleteSuggestion {
+  id: string;
+  businessName: string;
+  logoImageId?: string;
+  services: string[];
+  location?: string;
+}
+
+export const search = {
+  autocomplete: (q: string): Promise<{ suggestions: AutocompleteSuggestion[] }> => {
+    return apiFetch<{ suggestions: AutocompleteSuggestion[] }>(
+      `/api/search/autocomplete?q=${encodeURIComponent(q)}`
+    );
+  },
+};
+
+
 // ─── Provider Onboarding ──────────────────────────────────────────────────────
 
 export interface OnboardingValidation {

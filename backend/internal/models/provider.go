@@ -79,6 +79,15 @@ type ProviderGalleryImage struct {
 	CreatedAt  time.Time `db:"created_at" json:"createdAt"`
 }
 
+// AutocompleteSuggestion is a lightweight provider result for search autocomplete.
+type AutocompleteSuggestion struct {
+	ID           string   `json:"id"`
+	BusinessName string   `json:"businessName"`
+	LogoImageID  *string  `json:"logoImageId,omitempty"`
+	Services     []string `json:"services"`
+	Location     *string  `json:"location,omitempty"`
+}
+
 // ProviderAuditEntry represents a single row in the provider_verification_audit
 // table. Admin-only data; exposed via the admin API so the dashboard can show
 // who approved/suspended/unsuspended each provider and why.

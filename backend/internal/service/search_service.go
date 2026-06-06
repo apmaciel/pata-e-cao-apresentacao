@@ -50,6 +50,7 @@ type SearchResult struct {
 // SearchService manages the Typesense provider index.
 type SearchService interface {
 	SearchProviders(ctx context.Context, params SearchParams) (*SearchResult, error)
+	AutocompleteProviders(ctx context.Context, query string) ([]models.AutocompleteSuggestion, error)
 	IndexProvider(ctx context.Context, p *models.Provider) error
 	DeleteProvider(ctx context.Context, id string) error
 	Reindex(ctx context.Context, providers []models.Provider) error
@@ -290,6 +291,65 @@ func (s *TypesenseSearch) SearchProviders(ctx context.Context, params SearchPara
 		}
 	}
 	return out, nil
+}
+
+// AutocompleteProviders returns lightweight suggestions for search-as-you-type.
+// Uses Typesense with a small per_page to keep responses fast.
+func (s *TypesenseSearch) AutocompleteProviders(ctx context.Context, query string) ([]models.AutocompleteSuggestion, error) {
+	if query == "" {
+		return []models.AutocompleteSuggestion{}, nil
+	}
+
+	sp := &api.SearchCollectionParams{
+		Q:       pointer.String(query),
+		QueryBy: pointer.String("business_name,bio,location"),
+		FilterBy: pointer.String("status:=[approved]"),
+		SortBy:  pointer.String("_text_match:desc"),
+		PerPage: pointer.Int(5),
+	}
+
+	res, err := s.client.Collection(ProvidersCollection).Documents().Search(ctx, sp)
+	if err != nil {
+		return nil, err
+	}
+
+	suggestions := make([]models.AutocompleteSuggestion, 0, 5)
+	if res.Hits != nil {
+		for _, hit := range *res.Hits {
+			if hit.Document == nil {
+				continue
+			}
+			s := docToSuggestion(*hit.Document)
+			suggestions = append(suggestions, s)
+		}
+	}
+	return suggestions, nil
+}
+
+// docToSuggestion extracts a lightweight AutocompleteSuggestion from a Typesense doc.
+func docToSuggestion(doc map[string]interface{}) models.AutocompleteSuggestion {
+	s := models.AutocompleteSuggestion{}
+	if v, ok := doc["id"].(string); ok {
+		s.ID = v
+	}
+	if v, ok := doc["business_name"].(string); ok {
+		s.BusinessName = v
+	}
+	if v, ok := doc["logo_image_id"].(string); ok && v != "" {
+		s.LogoImageID = &v
+	}
+	if v, ok := doc["location"].(string); ok && v != "" {
+		s.Location = &v
+	}
+	if services, ok := doc["services"].([]interface{}); ok {
+		s.Services = make([]string, 0, len(services))
+		for _, svc := range services {
+			if str, ok := svc.(string); ok {
+				s.Services = append(s.Services, str)
+			}
+		}
+	}
+	return s
 }
 
 // docToProvider reconstructs a Provider from the Typesense doc representation.

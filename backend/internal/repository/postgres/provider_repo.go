@@ -52,6 +52,7 @@ type ProviderRepository interface {
 	RemoveGalleryImage(ctx context.Context, providerID, imageID string) error
 	SetOnboardingCompleted(ctx context.Context, providerID string) error
 	ExportAllProviders(ctx context.Context, statuses []string) ([]models.Provider, error)
+	AutocompleteApproved(ctx context.Context, query string) ([]models.AutocompleteSuggestion, error)
 }
 
 type providerRepo struct {
@@ -213,6 +214,39 @@ func (r *providerRepo) FacetServices(ctx context.Context, filters ProviderFilter
 		out[value] = count
 	}
 	return out, rows.Err()
+}
+
+// AutocompleteApproved returns up to 5 lightweight suggestions for
+// search-as-you-type, matching against business_name, bio, and location.
+// Used as the PostgreSQL fallback when Typesense is unavailable.
+func (r *providerRepo) AutocompleteApproved(ctx context.Context, query string) ([]models.AutocompleteSuggestion, error) {
+	rows, err := r.db.QueryContext(ctx,
+		`SELECT id, business_name, logo_image_id, services, location
+		 FROM providers
+		 WHERE status = 'approved'
+		   AND (business_name ILIKE '%' || $1 || '%'
+		        OR bio ILIKE '%' || $1 || '%'
+		        OR location ILIKE '%' || $1 || '%')
+		 ORDER BY business_name ILIKE $1 || '%' DESC,
+		          business_name ASC
+		 LIMIT 5`, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var suggestions []models.AutocompleteSuggestion
+	for rows.Next() {
+		var s models.AutocompleteSuggestion
+		if err := rows.Scan(&s.ID, &s.BusinessName, &s.LogoImageID, pq.Array(&s.Services), &s.Location); err != nil {
+			return nil, err
+		}
+		suggestions = append(suggestions, s)
+	}
+	if suggestions == nil {
+		suggestions = []models.AutocompleteSuggestion{}
+	}
+	return suggestions, rows.Err()
 }
 
 func (r *providerRepo) ListPending(ctx context.Context) ([]models.Provider, error) {
