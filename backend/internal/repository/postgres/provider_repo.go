@@ -18,11 +18,15 @@ import (
 // The shape mirrors service.SearchParams so the service layer can translate
 // directly without redefining defaults.
 type ProviderFilters struct {
-	Query   string // ILIKE matched against business_name, bio, location
-	Service string // exact match against any element of services[]
-	SortBy  string // "rating" (default) or "reviews"
-	Page    int    // 1-based page number
-	PerPage int    // results per page (max 50)
+	Query          string // ILIKE matched against business_name, bio, location
+	Service        string // exact match against any element of services[]
+	SortBy         string // "rating" (default) or "reviews"
+	Page           int    // 1-based page number
+	PerPage        int    // results per page (max 50)
+	AcceptsDogs    *bool  // filter by accepts_dogs (nil = no filter)
+	AcceptsCats    *bool  // filter by accepts_cats (nil = no filter)
+	AcceptsNeutered *bool // filter by accepts_neutered (nil = no filter)
+	AcceptsIntact  *bool  // filter by accepts_intact (nil = no filter)
 }
 
 // ProviderRepository defines persistence operations for provider profiles.
@@ -131,9 +135,14 @@ func (r *providerRepo) ListApproved(ctx context.Context, filters ProviderFilters
 		        OR business_name ILIKE '%' || $2 || '%'
 		        OR bio              ILIKE '%' || $2 || '%'
 		        OR location         ILIKE '%' || $2 || '%')
+		   AND ($5::bool IS NULL OR accepts_dogs = $5)
+		   AND ($6::bool IS NULL OR accepts_cats = $6)
+		   AND ($7::bool IS NULL OR accepts_neutered = $7)
+		   AND ($8::bool IS NULL OR accepts_intact = $8)
 		 ORDER BY `+orderBy+`
 		 LIMIT $3 OFFSET $4`,
-		filters.Service, filters.Query, perPage, offset)
+		filters.Service, filters.Query, perPage, offset,
+		filters.AcceptsDogs, filters.AcceptsCats, filters.AcceptsNeutered, filters.AcceptsIntact)
 	if err != nil {
 		return nil, err
 	}
@@ -165,8 +174,13 @@ func (r *providerRepo) CountApproved(ctx context.Context, filters ProviderFilter
 		   AND ($2 = ''
 		        OR business_name ILIKE '%' || $2 || '%'
 		        OR bio              ILIKE '%' || $2 || '%'
-		        OR location         ILIKE '%' || $2 || '%')`,
-		filters.Service, filters.Query).Scan(&n)
+		        OR location         ILIKE '%' || $2 || '%')
+		   AND ($3::bool IS NULL OR accepts_dogs = $3)
+		   AND ($4::bool IS NULL OR accepts_cats = $4)
+		   AND ($5::bool IS NULL OR accepts_neutered = $5)
+		   AND ($6::bool IS NULL OR accepts_intact = $6)`,
+		filters.Service, filters.Query,
+		filters.AcceptsDogs, filters.AcceptsCats, filters.AcceptsNeutered, filters.AcceptsIntact).Scan(&n)
 	return n, err
 }
 

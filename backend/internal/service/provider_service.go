@@ -112,11 +112,15 @@ func (s *ProviderService) listFromPostgres(ctx context.Context, params SearchPar
 	}
 
 	filters := postgres.ProviderFilters{
-		Query:   params.Query,
-		Service: params.Service,
-		SortBy:  params.SortBy,
-		Page:    page,
-		PerPage: perPage,
+		Query:          params.Query,
+		Service:        params.Service,
+		SortBy:         params.SortBy,
+		Page:           page,
+		PerPage:        perPage,
+		AcceptsDogs:    params.AcceptsDogs,
+		AcceptsCats:    params.AcceptsCats,
+		AcceptsNeutered: params.AcceptsNeutered,
+		AcceptsIntact:  params.AcceptsIntact,
 	}
 	providers, err := s.providers.ListApproved(ctx, filters)
 	if err != nil {

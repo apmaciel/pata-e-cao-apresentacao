@@ -24,7 +24,7 @@ export default function ProviderCarousel() {
     // Request a random page so the carousel stays fresh.
     const offset = randomOffset(60);
     providersApi.list({ limit: LIMIT, offset }).then((data) => {
-      const list = Array.isArray(data) ? data : ((data as any).providers ?? []);
+      const list = data.providers ?? [];
       // Filter to providers with at least one service.
       const filtered = list.filter((p: ProviderListItem) =>
         (p.services || []).length > 0

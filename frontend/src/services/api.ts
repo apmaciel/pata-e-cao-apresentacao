@@ -644,15 +644,28 @@ export const providers = {
     location?: string;
     limit?: number;
     offset?: number;
-  }): Promise<ProviderListItem[]> => {
+    acceptsDogs?: boolean | null;
+    acceptsCats?: boolean | null;
+    acceptsNeutered?: boolean | null;
+    acceptsIntact?: boolean | null;
+  }): Promise<SearchResult> => {
     const params = new URLSearchParams();
     if (filters?.q) params.set('q', filters.q);
     if (filters?.service) params.set('service', filters.service);
     if (filters?.location) params.set('location', filters.location);
-    if (filters?.limit !== undefined) params.set('limit', String(filters.limit));
-    if (filters?.offset !== undefined) params.set('offset', String(filters.offset));
+    if (filters?.acceptsDogs != null) params.set('acceptsDogs', String(filters.acceptsDogs));
+    if (filters?.acceptsCats != null) params.set('acceptsCats', String(filters.acceptsCats));
+    if (filters?.acceptsNeutered != null) params.set('acceptsNeutered', String(filters.acceptsNeutered));
+    if (filters?.acceptsIntact != null) params.set('acceptsIntact', String(filters.acceptsIntact));
+    // Backend expects page/per_page, not limit/offset.
+    const perPage = filters?.limit ?? 20;
+    const page = filters?.offset !== undefined
+      ? Math.floor(filters.offset / perPage) + 1
+      : 1;
+    params.set('page', String(page));
+    params.set('per_page', String(perPage));
     const qs = params.toString();
-    return apiFetch<ProviderListItem[]>(`/api/providers${qs ? `?${qs}` : ''}`);
+    return apiFetch<SearchResult>(`/api/providers${qs ? `?${qs}` : ''}`);
   },
 
   get: (id: string): Promise<ProviderDetail> => {

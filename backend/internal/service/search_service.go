@@ -20,11 +20,15 @@ const ProvidersCollection = "providers"
 // service-layer ListProviders entry point. It mirrors the public query
 // contract on GET /api/providers.
 type SearchParams struct {
-	Query   string
-	Service string
-	SortBy  string // "rating" (default) or "reviews"
-	Page    int    // 1-based
-	PerPage int    // capped at 50 by callers
+	Query          string
+	Service        string
+	SortBy         string // "rating" (default) or "reviews"
+	Page           int    // 1-based
+	PerPage        int    // capped at 50 by callers
+	AcceptsDogs    *bool  // nil = no filter
+	AcceptsCats    *bool  // nil = no filter
+	AcceptsNeutered *bool // nil = no filter
+	AcceptsIntact  *bool  // nil = no filter
 }
 
 // FacetValue is a single facet bucket returned alongside search results.
@@ -223,7 +227,19 @@ func (s *TypesenseSearch) SearchProviders(ctx context.Context, params SearchPara
 	}
 	filter := "status:=[approved]"
 	if params.Service != "" {
-		filter = fmt.Sprintf("status:=[approved] && services:=%s", params.Service)
+		filter += fmt.Sprintf(" && services:=%s", params.Service)
+	}
+	if params.AcceptsDogs != nil {
+		filter += fmt.Sprintf(" && accepts_dogs:=%v", *params.AcceptsDogs)
+	}
+	if params.AcceptsCats != nil {
+		filter += fmt.Sprintf(" && accepts_cats:=%v", *params.AcceptsCats)
+	}
+	if params.AcceptsNeutered != nil {
+		filter += fmt.Sprintf(" && accepts_neutered:=%v", *params.AcceptsNeutered)
+	}
+	if params.AcceptsIntact != nil {
+		filter += fmt.Sprintf(" && accepts_intact:=%v", *params.AcceptsIntact)
 	}
 	sp.FilterBy = pointer.String(filter)
 

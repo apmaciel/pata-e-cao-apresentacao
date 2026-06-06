@@ -1,6 +1,7 @@
 ---
 import '../i18n.config';
 import AppLayout from '../layouts/AppLayout.astro';
+import SearchHero from '../components/SearchHero';
 import SearchProviders from '../components/SearchProviders';
 ---
 
@@ -8,5 +9,6 @@ import SearchProviders from '../components/SearchProviders';
   title="Prestadores — PATA & CÃO"
   description="Encontre e filtre prestadores de serviços pet verificados perto de você."
 >
+  <SearchHero mode="inline" client:only="react" />
   <SearchProviders client:only="react" />
 </AppLayout>

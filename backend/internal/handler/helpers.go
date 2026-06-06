@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/go-playground/validator/v10"
@@ -73,4 +74,18 @@ func parseServiceError(err error) (int, string, string) {
 	default:
 		return http.StatusInternalServerError, "INTERNAL_ERROR", msg
 	}
+}
+
+// parseOptionalBool parses a query parameter as a boolean. Returns nil when
+// the parameter is absent or empty so callers can distinguish "no filter"
+// from an explicit "false".
+func parseOptionalBool(s string) *bool {
+	if s == "" {
+		return nil
+	}
+	v, err := strconv.ParseBool(s)
+	if err != nil {
+		return nil
+	}
+	return &v
 }

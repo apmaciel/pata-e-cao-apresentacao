@@ -86,6 +86,19 @@ func main() {
 	}
 	adminSvc := service.NewAdminService(postgres.NewStatsRepository(db))
 
+	// Reindex Typesense on every startup so the search index stays in sync
+	// with the Postgres source of truth.
+	if searchSvc != nil {
+		reindexCtx, cancelReindex := context.WithTimeout(context.Background(), 30*time.Second)
+		n, reindexErr := providerSvc.ReindexAll(reindexCtx)
+		cancelReindex()
+		if reindexErr != nil {
+			log.Printf("startup reindex failed: %v", reindexErr)
+		} else {
+			log.Printf("startup reindex complete: %d providers indexed", n)
+		}
+	}
+
 	// ── Handlers ─────────────────────────────────────────────────────────────
 	authH := handler.NewAuthHandler(authSvc, cfg.CookieSecure, cfg.JWTRefreshExpiry, cfg.FrontendURL, cfg.DevMode)
 	providerH := handler.NewProviderHandler(providerSvc, reviewSvc)

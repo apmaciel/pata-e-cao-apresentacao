@@ -26,18 +26,23 @@ func NewProviderHandler(providers *service.ProviderService, reviews *service.Rev
 }
 
 // ListProviders handles GET /api/providers (public, approved only).
-// Query params: q, service, sort=rating|reviews, page, per_page.
+// Query params: q, service, sort=rating|reviews, page, per_page,
+// acceptsDogs, acceptsCats, acceptsNeutered, acceptsIntact (boolean).
 // Response shape: { providers, total, page, perPage, facets }.
 func (h *ProviderHandler) ListProviders(c echo.Context) error {
 	page, _ := strconv.Atoi(c.QueryParam("page"))
 	perPage, _ := strconv.Atoi(c.QueryParam("per_page"))
 
 	params := service.SearchParams{
-		Query:   c.QueryParam("q"),
-		Service: c.QueryParam("service"),
-		SortBy:  c.QueryParam("sort"),
-		Page:    page,
-		PerPage: perPage,
+		Query:          c.QueryParam("q"),
+		Service:        c.QueryParam("service"),
+		SortBy:         c.QueryParam("sort"),
+		Page:           page,
+		PerPage:        perPage,
+		AcceptsDogs:    parseOptionalBool(c.QueryParam("acceptsDogs")),
+		AcceptsCats:    parseOptionalBool(c.QueryParam("acceptsCats")),
+		AcceptsNeutered: parseOptionalBool(c.QueryParam("acceptsNeutered")),
+		AcceptsIntact:  parseOptionalBool(c.QueryParam("acceptsIntact")),
 	}
 
 	result, err := h.providers.ListProviders(c.Request().Context(), params)

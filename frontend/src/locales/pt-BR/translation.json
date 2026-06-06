@@ -18,7 +18,12 @@
     "error": "Não foi possível carregar os prestadores. Tente novamente.",
     "resultsCount": "{{count}} prestador(es) encontrado(s)",
     "noResults": "Nenhum prestador encontrado",
-    "noResultsHint": "Tente ajustar os filtros ou ampliar a área de busca."
+    "noResultsHint": "Tente ajustar os filtros ou ampliar a área de busca.",
+    "acceptsDogs": "Aceita cães",
+    "acceptsCats": "Aceita gatos",
+    "acceptsNeutered": "Aceita castrados",
+    "acceptsIntact": "Aceita não castrados",
+    "filters": "Filtros"
   },
   "carousel": {
     "prev": "Anterior",
