@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"regexp"
 	"strings"
@@ -492,92 +491,6 @@ func (s *AuthService) Refresh(ctx context.Context, rawRefreshToken string) (*Aut
 // Logout revokes a refresh token.
 func (s *AuthService) Logout(ctx context.Context, rawRefreshToken string) error {
 	return s.tokens.Revoke(ctx, rawRefreshToken)
-}
-
-// UpdateProfileRequest carries the updatable owner profile fields.
-type UpdateProfileRequest struct {
-	CPF           *string         `json:"cpf"`
-	Phone         *string         `json:"phone"`
-	Bio           *string         `json:"bio"`
-	AvatarImageID *string         `json:"avatarImageId"`
-	SocialLinks   json.RawMessage `json:"socialLinks"`
-}
-
-// UpdateProfile updates the authenticated user's profile fields.
-func (s *AuthService) UpdateProfile(ctx context.Context, userID string, req UpdateProfileRequest) (*models.User, error) {
-	if req.CPF != nil {
-		cpf := strings.Map(func(r rune) rune {
-			if r >= '0' && r <= '9' {
-				return r
-			}
-			return -1
-		}, *req.CPF)
-		if len(cpf) != 11 {
-			return nil, fmt.Errorf("VALIDATION_ERROR: CPF must be exactly 11 digits")
-		}
-		if !validateCPF(cpf) {
-			return nil, fmt.Errorf("VALIDATION_ERROR: invalid CPF check digits")
-		}
-		req.CPF = &cpf
-	}
-
-	// Build a fields map for the dynamic update.
-	fields := map[string]interface{}{}
-	if req.CPF != nil {
-		fields["cpf"] = *req.CPF
-	}
-	if req.Phone != nil {
-		fields["phone"] = *req.Phone
-	}
-	if req.Bio != nil {
-		fields["bio"] = *req.Bio
-	}
-	if req.AvatarImageID != nil {
-		fields["avatar_image_id"] = *req.AvatarImageID
-	}
-	if req.SocialLinks != nil {
-		fields["social_links"] = req.SocialLinks
-	}
-
-	if len(fields) == 0 {
-		// Nothing to update — return current user.
-		return s.users.GetByID(ctx, userID)
-	}
-
-	if err := s.users.UpdateProfile(ctx, userID, fields); err != nil {
-		if isUniqueErr(err) {
-			return nil, fmt.Errorf("ALREADY_EXISTS: this CPF is already registered")
-		}
-		return nil, fmt.Errorf("INTERNAL_ERROR: failed to update profile")
-	}
-
-	return s.users.GetByID(ctx, userID)
-}
-
-// GetProfile returns the authenticated user's full profile.
-func (s *AuthService) GetProfile(ctx context.Context, userID string) (*models.User, error) {
-	user, err := s.users.GetByID(ctx, userID)
-	if err != nil {
-		return nil, fmt.Errorf("INTERNAL_ERROR: user not found")
-	}
-	return user, nil
-}
-
-// GetUserByID returns any user's profile by ID. Callers must enforce access control.
-func (s *AuthService) GetUserByID(ctx context.Context, userID string) (*models.User, error) {
-	user, err := s.users.GetByID(ctx, userID)
-	if err != nil {
-		return nil, fmt.Errorf("NOT_FOUND: user not found")
-	}
-	return user, nil
-}
-
-// DeleteProfile permanently deletes the user account and all cascaded data.
-func (s *AuthService) DeleteProfile(ctx context.Context, userID string) error {
-	if err := s.users.Delete(ctx, userID); err != nil {
-		return fmt.Errorf("INTERNAL_ERROR: failed to delete user")
-	}
-	return nil
 }
 
 // RequestPasswordReset issues a single-use recovery token for the user with

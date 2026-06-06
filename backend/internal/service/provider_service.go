@@ -258,9 +258,9 @@ func (s *ProviderService) DeleteOwnProvider(ctx context.Context, userID, passwor
 	// Remove from search index first so the provider disappears immediately.
 	s.deleteFromSearch(ctx, provider.ID)
 
-	// Delete the user — cascades to provider and all related data via FK constraints.
-	if err := s.users.Delete(ctx, userID); err != nil {
-		return fmt.Errorf("INTERNAL_ERROR: failed to delete user account")
+	// Delete the provider — cascades to all related data via FK constraints.
+	if err := s.providers.Delete(ctx, provider.ID); err != nil {
+		return fmt.Errorf("INTERNAL_ERROR: failed to delete provider account")
 	}
 
 	return nil
@@ -423,18 +423,6 @@ func (s *ProviderService) UpdateProfile(ctx context.Context, callerID string, p 
 			return fmt.Errorf("RATE_LIMITED: profile picture can only be changed once per calendar month")
 		}
 		p.LastLogoChange = &now
-		// Sync logo to user's avatar_image_id so it shows in the header.
-		if s.users != nil {
-			avatarID := ""
-			if p.LogoImageID != nil {
-				avatarID = *p.LogoImageID
-			}
-			if err := s.users.UpdateProfile(ctx, existing.UserID, map[string]interface{}{
-				"avatar_image_id": avatarID,
-			}); err != nil {
-				log.Printf("UpdateProfile: failed to sync avatar for user %s: %v", existing.UserID, err)
-			}
-		}
 	} else {
 		p.LastLogoChange = existing.LastLogoChange
 	}
@@ -602,16 +590,6 @@ func (s *ProviderService) CompleteOnboarding(ctx context.Context, rawToken strin
 	if err := s.providers.Update(ctx, provider); err != nil {
 		log.Printf("onboarding: update provider %s failed: %v", provider.ID, err)
 		return fmt.Errorf("INTERNAL_ERROR: failed to update provider profile")
-	}
-
-	// Sync logo to user's avatar_image_id so it shows in the header.
-	if data.AvatarImageID != nil && *data.AvatarImageID != "" && s.users != nil {
-		if err := s.users.UpdateProfile(ctx, provider.UserID, map[string]interface{}{
-			"avatar_image_id": *data.AvatarImageID,
-		}); err != nil {
-			log.Printf("onboarding: failed to sync avatar for user %s: %v", provider.UserID, err)
-			return fmt.Errorf("INTERNAL_ERROR: failed to sync user avatar")
-		}
 	}
 
 	// Insert gallery images.

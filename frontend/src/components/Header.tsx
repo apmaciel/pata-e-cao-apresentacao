@@ -4,7 +4,6 @@ import { FiMenu, FiX } from 'react-icons/fi';
 // import LanguageSelector from './LanguageSelector';
 import LoginModal from './LoginModal';
 import { auth, getCurrentUser, type UserProfile } from '../services/api';
-import { API_URL } from '../utils/config';
 import '../i18n.config';
 
 // initialFor renders a single-letter avatar fallback. We pick the first letter
@@ -59,17 +58,9 @@ function AccountMenu({ user, open, onToggle, onClose, onLogout }: AccountMenuPro
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label={user.fullName || user.email}
-        className="w-11 h-11 rounded-full bg-primary text-white font-display font-bold text-base flex items-center justify-center shadow-sm border-2 border-white hover:border-primary-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 transition-all overflow-hidden"
+        className="w-11 h-11 rounded-full bg-primary text-white font-display font-bold text-base flex items-center justify-center shadow-sm border-2 border-white hover:border-primary-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 transition-all"
       >
-        {user.avatarImageId ? (
-          <img
-            src={`${API_URL}/api/images/${user.avatarImageId}`}
-            alt={user.fullName || user.email || ''}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          initialFor(user)
-        )}
+        {initialFor(user)}
       </button>
       {open && (
         <div
@@ -78,20 +69,11 @@ function AccountMenu({ user, open, onToggle, onClose, onLogout }: AccountMenuPro
         >
           {!isAdmin && (
           <a
-            href={isProvider ? '/providers/detail' : '/account'}
+            href={isProvider ? '/providers/detail' : '#'}
             role="menuitem"
             className="block px-4 py-3 text-sm text-primary-dark hover:bg-gray-50 border-b border-gray-100"
           >
             {isProvider ? t('account.myProviderProfile') : t('account.viewProfile')}
-          </a>
-          )}
-          {!isProvider && !isAdmin && (
-          <a
-            href="/pets"
-            role="menuitem"
-            className="block px-4 py-3 text-sm text-primary-dark hover:bg-gray-50 border-b border-gray-100"
-          >
-            {t('account.managePets')}
           </a>
           )}
           {isAdmin && (

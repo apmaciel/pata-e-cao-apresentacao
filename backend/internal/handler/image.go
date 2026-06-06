@@ -138,11 +138,11 @@ func (h *ImageHandler) serveMetadata(c echo.Context, imageID string) error {
 	return c.JSON(http.StatusOK, meta)
 }
 
-// UploadImage handles POST /api/images/upload?type=logo|facility|pet|document|provider|avatar
+// UploadImage handles POST /api/images/upload?type=logo|facility|document|provider
 func (h *ImageHandler) UploadImage(c echo.Context) error {
 	imageType := service.ImageType(c.QueryParam("type"))
 	if imageType == "" {
-		return apiError(c, http.StatusBadRequest, "VALIDATION_ERROR", "query param 'type' is required (logo|facility|pet|document|provider|avatar)")
+		return apiError(c, http.StatusBadRequest, "VALIDATION_ERROR", "query param 'type' is required (logo|facility|document|provider)")
 	}
 
 	// Document uploads are used by the public provider registration flow;

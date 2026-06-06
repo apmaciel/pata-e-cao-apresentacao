@@ -21,13 +21,7 @@ export interface UserProfile {
   email: string;
   fullName: string;
   role: 'owner' | 'provider' | 'admin';
-  phone?: string;
-  cpf?: string;
-  bio?: string;
-  avatarImageId?: string;
-  socialLinks?: SocialLinks;
   createdAt: string;
-  updatedAt?: string;
 }
 
 export interface AuthResponse {
@@ -124,105 +118,6 @@ export interface Review {
   rating: number;
   comment: string;
   createdAt: string;
-}
-
-export interface Pet {
-  id: string;
-  ownerId: string;
-  slug: string;
-  name: string;
-  species: string;
-  breed?: string;
-  birthDate?: string;
-  color?: string;
-  weightKg?: number;
-  heightCm?: number;
-  size: 'small' | 'medium' | 'large';
-  ageYears?: number;
-  photoImageId?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface CreatePetData {
-  name: string;
-  species: string;
-  breed?: string;
-  birthDate?: string;
-  color?: string;
-  weightKg?: number;
-  heightCm?: number;
-  size?: 'small' | 'medium' | 'large';
-  ageYears?: number;
-  photoImageId?: string;
-}
-
-export interface PetHealthRecord {
-  id: string;
-  petId: string;
-  vaccinations: unknown; // JSONB
-  allergies: string[];
-  medications: string[];
-  specialNeeds?: string;
-  isSensitive?: boolean;
-  isNeutered?: boolean;
-  behaviorNotes?: string;
-  vetName?: string;
-  vetPhone?: string;
-  vetEmail?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface UpdateHealthData {
-  vaccinations?: unknown;
-  allergies?: string[];
-  medications?: string[];
-  specialNeeds?: string;
-  isSensitive?: boolean;
-  isNeutered?: boolean;
-  behaviorNotes?: string;
-  vetName?: string;
-  vetPhone?: string;
-  vetEmail?: string;
-}
-
-export interface UpdatePetData {
-  name?: string;
-  breed?: string;
-  color?: string;
-  weightKg?: number;
-  heightCm?: number;
-  size?: 'small' | 'medium' | 'large';
-  ageYears?: number;
-  photoImageId?: string;
-}
-
-export interface PetImage {
-  id: string;
-  petId: string;
-  imageId: string;
-  sortOrder: number;
-  isPrimary: boolean;
-  createdAt: string;
-}
-
-export interface Booking {
-  id: string;
-  providerId: string;
-  petId: string;
-  service: string;
-  scheduledAt: string;
-  status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
-  notes?: string;
-}
-
-export interface CreateBookingData {
-  providerId: string;
-  petId: string;
-  service: string;
-  scheduledAt: string;
-  notes?: string;
 }
 
 // ─── Authenticated document download ───────────────────────────────────────────
@@ -475,34 +370,7 @@ export const auth = {
       body: JSON.stringify({ token, password }),
     });
   },
-
-getProfile: async (): Promise<UserProfile> => {
-      return apiFetch<UserProfile>('/api/auth/profile');
-    },
-
-    updateProfile: async (data: {
-      cpf?: string;
-      phone?: string;
-      bio?: string;
-      avatarImageId?: string;
-      socialLinks?: SocialLinks;
-    }): Promise<UserProfile> => {
-      return apiFetch<UserProfile>('/api/auth/profile', {
-        method: 'PUT',
-        body: JSON.stringify(data),
-      });
-    },
-
-    // View a specific user's profile. Gated by ownership, admin role,
-    // or confirmed booking relationship with that user.
-    getUserProfile: async (userId: string): Promise<UserProfile> => {
-      return apiFetch<UserProfile>(`/api/users/${userId}`);
-    },
-
-    deleteProfile: async (): Promise<void> => {
-      await apiFetch<void>('/api/auth/profile', { method: 'DELETE' });
-    },
-  };
+};
 
 // ─── Admin ─────────────────────────────────────────────────────────────────────
 
@@ -570,15 +438,6 @@ export const admin = {
   getProviderGrowth: (range: string): Promise<ProviderGrowthResponse> => {
     return apiFetch<ProviderGrowthResponse>(`/api/admin/stats/providers?range=${encodeURIComponent(range)}`);
   },
-
-  getPetSpeciesDistribution: (): Promise<PetSpeciesPoint[]> => {
-    return apiFetch<PetSpeciesPoint[]>('/api/admin/stats/pets/species');
-  },
-
-  getPetAgeDistribution: (species?: string): Promise<PetAgePoint[]> => {
-    const qs = species ? `?species=${encodeURIComponent(species)}` : '';
-    return apiFetch<PetAgePoint[]>(`/api/admin/stats/pets/ages${qs}`);
-  },
 };
 
 export interface AdminAuditEntry {
@@ -605,9 +464,6 @@ export interface AdminStats {
   usersByRole: Record<string, number>;
   totalProviders: number;
   providersByStatus: Record<string, number>;
-  totalBookings: number;
-  bookingsByStatus: Record<string, number>;
-  totalPets: number;
   totalReviews: number;
   newUsersLast30Days: number;
   newProvidersLast30Days: number;
@@ -623,16 +479,6 @@ export interface ProviderGrowthResponse {
   range: string;
   interval: string;
   data: ProviderGrowthPoint[];
-}
-
-export interface PetSpeciesPoint {
-  species: string;
-  count: number;
-}
-
-export interface PetAgePoint {
-  age: number;
-  count: number;
 }
 
 // ─── Providers ────────────────────────────────────────────────────────────────
@@ -794,103 +640,3 @@ export const providerOnboarding = {
     });
   },
 };
-// ─── Pets ─────────────────────────────────────────────────────────────────────
-
-export const pets = {
-  list: (): Promise<Pet[]> => {
-    return apiFetch<Pet[]>('/api/pets');
-  },
-
-  get: (id: string): Promise<Pet> => {
-    return apiFetch<Pet>(`/api/pets/${id}`);
-  },
-
-  create: (data: CreatePetData): Promise<Pet> => {
-    return apiFetch<Pet>('/api/pets', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-
-  update: (id: string, data: Partial<CreatePetData>): Promise<Pet> => {
-    return apiFetch<Pet>(`/api/pets/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
-  },
-
-  getHealth: (id: string): Promise<PetHealthRecord> => {
-    return apiFetch<PetHealthRecord>(`/api/pets/${id}/health`);
-  },
-
-  updateHealth: (id: string, data: UpdateHealthData): Promise<PetHealthRecord> => {
-    return apiFetch<PetHealthRecord>(`/api/pets/${id}/health`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
-  },
-
-  delete: (id: string): Promise<void> => {
-    return apiFetch<void>(`/api/pets/${id}`, { method: 'DELETE' });
-  },
-};
-
-// ─── Pet Images ───────────────────────────────────────────────────────────────
-
-export const petImages = {
-  list: (petId: string): Promise<PetImage[]> => {
-    return apiFetch<PetImage[]>(`/api/pets/${petId}/images`);
-  },
-
-  add: (petId: string, imageId: string): Promise<PetImage> => {
-    return apiFetch<PetImage>(`/api/pets/${petId}/images`, {
-      method: 'POST',
-      body: JSON.stringify({ imageId }),
-    });
-  },
-
-  remove: (petId: string, imageId: string): Promise<void> => {
-    return apiFetch<void>(`/api/pets/${petId}/images/${encodeURIComponent(imageId)}`, {
-      method: 'DELETE',
-    });
-  },
-
-  setPrimary: (petId: string, imageId: string): Promise<void> => {
-    return apiFetch<void>(`/api/pets/${petId}/images/${encodeURIComponent(imageId)}/primary`, {
-      method: 'PUT',
-    });
-  },
-};
-
-// ─── Bookings ─────────────────────────────────────────────────────────────────
-
-export const bookings = {
-  create: (data: CreateBookingData): Promise<Booking> => {
-    return apiFetch<Booking>('/api/bookings', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-
-  list: (): Promise<Booking[]> => {
-    return apiFetch<Booking[]>('/api/bookings');
-  },
-
-  get: (id: string): Promise<Booking> => {
-    return apiFetch<Booking>(`/api/bookings/${id}`);
-  },
-
-  confirm: (id: string): Promise<Booking> => {
-    return apiFetch<Booking>(`/api/bookings/${id}/confirm`, {
-      method: 'POST',
-    });
-  },
-
-  cancel: (id: string, reason?: string): Promise<Booking> => {
-    return apiFetch<Booking>(`/api/bookings/${id}/cancel`, {
-      method: 'POST',
-      body: JSON.stringify({ reason }),
-    });
-  },
-};
-

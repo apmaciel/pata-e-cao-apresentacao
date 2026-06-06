@@ -97,26 +97,7 @@ All transitions are audit-logged in `provider_verification_audit`. Suspended pro
 - **Frontend**: `ProviderProfileEdit.tsx` — inline edit form with logo upload, gallery grid, service checkboxes, social links, rate-limit notices
 - **Gallery cap**: 15 images (raised from 6). DB table `provider_gallery_images` has no hard cap; limit enforced in service layer and UI.
 
-### Pet owner flow
-
-- **Signup**: The `LoginModal` now has tabs — **Pet Owner** (simple signup: fullName + email + password, role=`owner`) and **Provider** (redirects to `/providers/apply`). After pet-owner signup, the user is redirected to `/pets/add`.
-- **Pet registration**: Two-step wizard in `PetRegistrationForm.tsx` — Step 1 (name, species, breed, birthDate, color, weightKg, heightCm, size, optional profile photo) → Step 2 (allergies, medications, isNeutered, behaviorNotes, specialNeeds, optional vet info). On submit: creates pet via `POST /api/pets`, upserts health record via `PUT /api/pets/:id/health`, then uploads profile photo if selected. Age is computed automatically from birth date.
-- **Pet dashboard**: `PetDashboard.tsx` at `/pets` lists all owner's pets as cards with profile photo (or species-colored initial avatar), breed/size/color badges, and birth date. Empty state with heart icon and CTA. **"+ Add Another Pet"** button.
-- **Pet detail page**: `PetDetailPage.tsx` at `/pets/detail?petId=xxx` — read-only view with photo gallery (primary + up to 10 images), pet info card, health info card, vet info card. **"Edit Pet"** button opens `PetEditModal`. **"Delete Pet"** button opens `DeletePetModal` (requires typing pet name + birth date to confirm).
-- **Pet edit modal**: `PetEditModal.tsx` — two tabs (Basic Info + Health). Editable fields: name, breed, color, size, weight, height, allergies, medications, neutered status, behavior notes, special needs. Species and birthDate are read-only (locked after creation).
-- **Photo management**: Upload via `POST /api/images/upload?type=pet` (multipart). Images stored in `pet_images` table (max 10 per pet, one primary enforced by partial unique index). SeaweedFS or local filesystem backing with LRU cache. Gallery with click-to-enlarge lightbox. Set-as-primary and delete controls on thumbnails.
-- **Pet deletion**: `DeletePetModal` requires typing exact pet name + birth date to confirm. Calls `DELETE /api/pets/:id`. Database cascades delete all child rows (images, health records, access logs). Image files are orphaned on storage but DB references are cleaned.
-- **Profile**: `PUT /api/auth/profile` saves CPF + phone for the authenticated user.
-- **Age computation**: `computeAge(birthDate)` runs client-side from the birth date. On registration, the computed value is sent as `ageYears`. On the backend, `birthDate` is stored as `DATE` (scanned into `*time.Time`, marshals to RFC3339). `species` and `birthDate` are locked after creation (not in `updatePetRequest`).
 - **Session restore**: `apiFetch` has a 401 interceptor that calls `refreshToken()` (deduplicated) and retries once. `authReady()` promise lets components await initial session check before firing API calls.
-
-### Pet health security
-
-- `PetHealthRecord` access is always audit-logged via `pet_health_access_log`.
-- Owners always have access. Providers with a confirmed booking also have access.
-- Error responses are sanitized — never include health data.
-- `Vaccinations` uses `json.RawMessage` to avoid base64 encoding over the wire.
-- When no health record exists, the backend returns empty arrays (`[]`) for `allergies`/`medications` to prevent frontend null-reference crashes.
 
 ### Database
 
@@ -148,7 +129,7 @@ All transitions are audit-logged in `provider_verification_audit`. Suspended pro
 - **Icons**: `react-icons` (Feather icon set — `react-icons/fi`). Usage: `import { FiX, FiSearch, FiMapPin } from 'react-icons/fi'`. Prefer react-icons over inline SVGs. Check [react-icons.github.io](https://react-icons.github.io) for available icons.
 - API client in `services/api.ts`: in-memory access token, `apiFetch` adds `Authorization` header + `credentials: 'include'` for the httpOnly refresh cookie. On page reload, `Header.tsx` calls `auth.refresh()` to restore the session.
 - Shared config in `utils/config.ts`: `API_URL` resolved from `PUBLIC_API_URL` env var (or defaults to `http://localhost:8080`). Import this instead of duplicating the resolution logic.
-- i18n: 4 locales (en, es, pt, pt-BR) in `src/locales/{lang}/translation.json`. All four must have identical key sets. AuthForm and LoginModal must use the same i18n key names (they were forked; harmonised May 2026).
+- i18n: Single locale (pt-BR) in `src/locales/pt-BR/translation.json`. No multi-language support.
 - **API response shapes**: `GET /api/providers` returns a `SearchResult` wrapper `{ providers: [...], total, page, perPage }` — NOT a bare array. Always extract `.providers` in the frontend. `GET /api/providers/:id` and `GET /api/providers/me` now include `galleryImages` array.
 - **Provider logo images**: Use direct `<img src={API_URL}/api/images/{logoImageId}>` — do NOT use OptimizedImage for provider logos (its metadata roundtrip is fragile).
 - **`Header.isActive()`**: stores `pathname + search` (not just pathname). Trailing slashes are normalised before comparison.
@@ -163,19 +144,13 @@ All transitions are audit-logged in `provider_verification_audit`. Suspended pro
 
 ### Service catalog
 
-`frontend/src/utils/serviceCatalog.ts` is the single source of truth for the platform's 3 service types: `walking`, `training`, `boarding`. The search filter dropdown, provider registration form, Header nav links, and admin dashboard all consume this catalog. Adding a new service means adding it there and translating `services.catalog.<key>` in all four locales.
+`frontend/src/utils/serviceCatalog.ts` is the single source of truth for the platform's 3 service types: `walking`, `training`, `boarding`. The search filter dropdown, provider registration form, Header nav links, and admin dashboard all consume this catalog. Adding a new service means adding it there and translating `services.catalog.<key>` in the pt-BR locale file.
 
-### User profile (owner)
+### Search autocomplete
 
-- **Model**: `users` table extended with `bio`, `avatar_image_id`, `social_links` (JSONB) via migration `012_user_profile_fields.sql`.
-- **Profile page**: `UserProfile.tsx` at `/account` — view/edit modes. Editable fields: phone, CPF, bio, avatar (upload via `type=avatar`), and 5 social platforms (LinkedIn, Instagram, Facebook, Twitter, Website).
-- **Avatar images**: `type=avatar` added to the image upload endpoint — constraints: 100–1000px, 1 MB, JPEG/PNG.
-- **Access control**:
-  - **READ**: `GET /api/auth/profile` — self only (JWT). `GET /api/users/:id` — gated: self, admin, or provider with confirmed booking (`HasConfirmedBooking` check in `booking_repo.go`).
-  - **WRITE**: `PUT /api/auth/profile` — self only (JWT). Dynamic field update via `UpdateProfile` repo method (only `phone`, `cpf`, `bio`, `avatar_image_id`, `social_links` allowed).
-  - **DELETE**: `DELETE /api/auth/profile` — self only (JWT). Migration `013_user_delete_cascade.sql` fixes FK constraints so deletion cascades through pets, providers, bookings, reviews, refresh_tokens, pet_health_access_log. `provider_verification_audit.admin_id` and `providers.status_changed_by` are set to NULL on admin delete.
-  - **CREATE**: via `POST /api/auth/signup` only — profile starts empty, owner fills it in later.
-- **Frontend API**: `auth.getProfile()`, `auth.updateProfile(data)`, `auth.getUserProfile(userId)`, `auth.deleteProfile()`.
+- **Endpoint**: `GET /api/search/autocomplete?q=...` returns up to 5 lightweight provider suggestions.
+- **Backend**: Typesense (with PostgreSQL ILIKE fallback) matches against `business_name`, `bio`, `location`. Sorted by text-match relevance.
+- **Frontend**: `SearchHero.tsx` shows a dropdown with 250ms debounce. Each suggestion shows logo (or initial), name, location, and service badges. Keyboard navigation (↑↓, Enter, Escape) and click-to-navigate to `/providers/detail?id=xxx`.
 
 ## Key files
 
@@ -183,21 +158,13 @@ All transitions are audit-logged in `provider_verification_audit`. Suspended pro
 |------|---------|
 | `backend/cmd/server/main.go` | Route registration, wiring |
 | `backend/internal/handler/helpers.go` | `apiError`, `validationError`, `parseServiceError` |
-| `backend/internal/service/auth_service.go` | Signup, login, refresh, logout, password reset, register-provider, update-profile |
-| `backend/internal/service/pet_service.go` | Pet CRUD + health + images + delete with ownership enforcement; `verifyOwner` helper |
-| `backend/internal/service/provider_service.go` | Apply, approve, reject, suspend, unsuspend, search sync |
+| `backend/internal/service/auth_service.go` | Signup, login, refresh, logout, password reset, register-provider |
+| `backend/internal/service/provider_service.go` | Apply, approve, reject, suspend, unsuspend, search sync, autocomplete |
 | `backend/internal/service/admin_service.go` | Dashboard stats + provider growth time-series |
-| `backend/internal/repository/postgres/pet_repo.go` | All pet + health queries; `petSelectColumns`, slug generation |
 | `backend/internal/repository/postgres/provider_repo.go` | All provider queries; `providerSelectColumns`, `adminSelectColumns` |
 | `backend/internal/repository/postgres/stats_repo.go` | Aggregate stats queries + provider growth time-series |
-| `backend/internal/handler/pet.go` | Pet CRUD + health + image + delete handlers; `createPetRequest`, `updatePetRequest`, `updateHealthRequest` |
-| `backend/internal/models/pet.go` | `Pet`, `PetHealthRecord`, `HealthAccessLog` structs |
-| `backend/internal/models/pet_image.go` | `PetImage`, `AddImageRequest` structs |
 | `backend/internal/middleware/auth.go` | JWT validation, role checks |
-| `backend/migrations/006_pet_owner_fields.sql` | Extends pets, health_records, users for pet owner flow |
-| `backend/migrations/007_pet_images.sql` | `pet_images` table with primary-photo enforcement |
-| `backend/migrations/008_pet_health_access_log_cascade.sql` | ON DELETE CASCADE fix for health access log |
-| `frontend/src/services/api.ts` | API client — types, `apiFetch`, auth, admin, providers, pets, bookings, images |
+| `frontend/src/services/api.ts` | API client — types, `apiFetch`, auth, admin, providers, images, search |
 | `frontend/src/utils/config.ts` | Shared `API_URL` resolution from env var |
 | `frontend/src/utils/serviceCatalog.ts` | Canonical service list + i18n keys |
 | `frontend/src/utils/password.ts` | `evaluatePassword`, `generateStrongPassword` |
@@ -212,20 +179,11 @@ All transitions are audit-logged in `provider_verification_audit`. Suspended pro
 | `frontend/src/components/ApplicationsPanel.tsx` | Pending provider review queue |
 | `frontend/src/components/ProvidersPanel.tsx` | Searchable/filterable all-providers table |
 | `frontend/src/components/LineChart.tsx` | Reusable SVG line chart with axes + legend |
-| `frontend/src/components/LoginModal.tsx` | Auth modal with Pet Owner / Provider signup tabs |
-| `frontend/src/components/PetRegistrationForm.tsx` | Two-step pet registration wizard (pet info → health) |
-| `frontend/src/components/PetDashboard.tsx` | Owner's pet list with photo cards, empty state, "+ Add Another Pet" |
-| `frontend/src/components/PetRegistrationForm.tsx` | Two-step pet registration wizard (info → health + photo) |
-| `frontend/src/components/PetDetailPage.tsx` | Read-only detail view with photo gallery, health, vet info, edit/delete buttons |
-| `frontend/src/components/PetEditModal.tsx` | Two-tab edit modal (Basic Info + Health); species/birthDate locked |
-| `frontend/src/components/DeletePetModal.tsx` | Deletion confirmation requiring pet name + birth date match |
-| `frontend/src/pages/pets/index.astro` | Pet dashboard page at `/pets` |
-| `frontend/src/pages/pets/add.astro` | Pet registration page at `/pets/add` |
-| `frontend/src/pages/pets/detail.astro` | Pet detail page at `/pets/detail?petId=xxx` |
-| `ADMIN_INSTRUCTIONS.md` | Full admin API reference + workflow docs |
-| `backend/migrations/009_provider_document_image_id.sql` | Adds `document_image_id` for SeaweedFS doc uploads |
+| `frontend/src/components/LoginModal.tsx` | Auth modal with Provider signup tab |
+| `frontend/src/components/ProviderOnboardingForm.tsx` | 5-step post-approval wizard (credentials → visual → prefs → about → contact); gallery max 15 |
 | `backend/migrations/010_provider_onboarding.sql` | Adds `provider_onboarding_tokens`, `provider_gallery_images`, service-preference columns |
 | `backend/migrations/011_provider_company_name.sql` | Adds `company_name` to providers (legal vs trade name) |
+| `backend/migrations/009_provider_document_image_id.sql` | Adds `document_image_id` for SeaweedFS doc uploads |
 | `backend/internal/handler/onboarding.go` | Onboarding token validate + complete endpoints |
 | `backend/internal/handler/image.go` | Image upload/serve; `provider` uploads require onboarding token for abuse protection |
 | `backend/internal/repository/postgres/onboarding_repo.go` | Onboarding token persistence (Save, GetByHash, Consume) |
@@ -239,12 +197,8 @@ All transitions are audit-logged in `provider_verification_audit`. Suspended pro
 | `frontend/src/components/ProviderCarousel.tsx` | Auto-rolling infinite-scroll carousel, fetches 15 random providers, CSS keyframe animation |
 | `frontend/src/components/ServicesSection.tsx` | 6-service grid (2×3) with i18n'd cards, links use canonical service codes |
 | `backend/internal/service/search_service.go` | Typesense collection schema, providerToDoc/docToProvider with acceptance fields |
-| `backend/internal/handler/auth.go` | Auth handlers: signup, login, refresh, logout, password reset, profile CRUD, user lookup (access-gated) |
-| `backend/internal/service/auth_service.go` | Auth business logic: token issuance, password policy, profile update (dynamic), profile read/delete, user lookup |
-| `backend/internal/repository/postgres/user_repo.go` | User persistence: CRUD, `UpdateProfile` (dynamic safe-column update), `Delete` with cascade |
-| `backend/internal/handler/image.go` | Image upload/serve; accepts `type=avatar` (100–1000px, 1 MB) |
-| `backend/migrations/012_user_profile_fields.sql` | Adds `bio`, `avatar_image_id`, `social_links` (JSONB) to users |
-| `backend/migrations/013_user_delete_cascade.sql` | Fixes FK constraints so user deletion cascades/ SET NULL properly |
-| `frontend/src/components/UserProfile.tsx` | Owner profile page with view/edit modes, avatar upload, social links management |
-| `frontend/src/pages/account.astro` | User profile page at `/account` |
-| `frontend/src/services/api.ts` | API client: `auth.getProfile`, `auth.updateProfile`, `auth.getUserProfile`, `auth.deleteProfile`, `SocialLinks` type |
+| `backend/internal/handler/auth.go` | Auth handlers: signup, login, refresh, logout, password reset |
+| `backend/internal/service/auth_service.go` | Auth business logic: token issuance, password policy |
+| `backend/internal/repository/postgres/user_repo.go` | User persistence: Create, GetByEmail, GetByID |
+| `backend/internal/handler/search.go` | Search autocomplete endpoint; admin reindex |
+| `frontend/src/components/SearchHero.tsx` | Search bar with autocomplete dropdown, debounced suggestions, keyboard navigation |

@@ -14,47 +14,6 @@ CREATE TABLE users (
     updated_at    TIMESTAMPTZ  NOT NULL DEFAULT NOW()
 );
 
--- ── Pets ──────────────────────────────────────────────────────────────────────
-CREATE TABLE pets (
-    id             UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
-    owner_id       UUID          NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    name           VARCHAR(100)  NOT NULL,
-    species        VARCHAR(50)   NOT NULL,
-    breed          VARCHAR(100),
-    age_years      INT,
-    weight_kg      DECIMAL(5,2),
-    photo_image_id VARCHAR(255),
-    created_at     TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
-    updated_at     TIMESTAMPTZ   NOT NULL DEFAULT NOW()
-);
-
--- ── Pet health records (sensitive) ───────────────────────────────────────────
-CREATE TABLE pet_health_records (
-    id            UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-    pet_id        UUID        NOT NULL UNIQUE REFERENCES pets(id) ON DELETE CASCADE,
-    vaccinations  JSONB       NOT NULL DEFAULT '[]',
-    allergies     TEXT[]      NOT NULL DEFAULT '{}',
-    medications   TEXT[]      NOT NULL DEFAULT '{}',
-    special_needs TEXT,
-    vet_name      VARCHAR(100),
-    vet_phone     VARCHAR(20),
-    vet_email     VARCHAR(255),
-    is_sensitive  BOOLEAN     NOT NULL DEFAULT TRUE,
-    created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
--- ── Health access audit log ───────────────────────────────────────────────────
-CREATE TABLE pet_health_access_log (
-    id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-    pet_id      UUID        NOT NULL REFERENCES pets(id),
-    accessed_by UUID        NOT NULL REFERENCES users(id),
-    context     VARCHAR(100) NOT NULL,
-    booking_id  UUID,
-    ip_address  VARCHAR(45),
-    accessed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
 -- ── Providers ─────────────────────────────────────────────────────────────────
 CREATE TABLE providers (
     id                      UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -91,29 +50,9 @@ CREATE TABLE provider_verification_audit (
     created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- ── Bookings ──────────────────────────────────────────────────────────────────
-CREATE TABLE bookings (
-    id               UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-    owner_id         UUID        NOT NULL REFERENCES users(id),
-    provider_id      UUID        NOT NULL REFERENCES providers(id),
-    pet_id           UUID        NOT NULL REFERENCES pets(id),
-    service_type     VARCHAR(50) NOT NULL,
-    start_date       DATE        NOT NULL,
-    end_date         DATE        NOT NULL,
-    status           VARCHAR(20) NOT NULL DEFAULT 'pending',
-    notes            TEXT,
-    price_cents      INT,
-    cancelled_reason TEXT,
-    created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    -- Prevent double-booking the same provider for the same dates.
-    CONSTRAINT bookings_no_overlap UNIQUE (provider_id, start_date, end_date)
-);
-
 -- ── Reviews ───────────────────────────────────────────────────────────────────
 CREATE TABLE reviews (
     id                UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-    booking_id        UUID        NOT NULL UNIQUE REFERENCES bookings(id),
     reviewer_id       UUID        NOT NULL REFERENCES users(id),
     provider_id       UUID        NOT NULL REFERENCES providers(id),
     rating            INT         NOT NULL,
@@ -137,14 +76,8 @@ CREATE TABLE refresh_tokens (
 );
 
 -- ── Indexes ───────────────────────────────────────────────────────────────────
-CREATE INDEX idx_pets_owner_id               ON pets(owner_id);
 CREATE INDEX idx_providers_status            ON providers(status);
 CREATE INDEX idx_providers_user_id           ON providers(user_id);
-CREATE INDEX idx_bookings_owner_id           ON bookings(owner_id);
-CREATE INDEX idx_bookings_provider_id        ON bookings(provider_id);
-CREATE INDEX idx_bookings_status             ON bookings(status);
 CREATE INDEX idx_reviews_provider_id         ON reviews(provider_id);
 CREATE INDEX idx_reviews_status              ON reviews(status);
 CREATE INDEX idx_refresh_tokens_user_id      ON refresh_tokens(user_id);
-CREATE INDEX idx_pet_health_access_pet_id    ON pet_health_access_log(pet_id);
-CREATE INDEX idx_pet_health_access_user_id   ON pet_health_access_log(accessed_by);

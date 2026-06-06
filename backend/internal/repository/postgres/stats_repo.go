@@ -14,7 +14,6 @@ type AdminStats struct {
 	UsersByRole            map[string]int `json:"usersByRole"`
 	TotalProviders         int            `json:"totalProviders"`
 	ProvidersByStatus      map[string]int `json:"providersByStatus"`
-	TotalPets              int            `json:"totalPets"`
 	TotalReviews           int            `json:"totalReviews"`
 	NewUsersLast30Days     int            `json:"newUsersLast30Days"`
 	NewProvidersLast30Days int            `json:"newProvidersLast30Days"`
@@ -34,18 +33,6 @@ type ProviderGrowthResponse struct {
 	Data     []ProviderGrowthPoint `json:"data"`
 }
 
-// PetSpeciesPoint holds the count for a single pet species.
-type PetSpeciesPoint struct {
-	Species string `json:"species"`
-	Count   int    `json:"count"`
-}
-
-// PetAgePoint holds the count for a single age bucket.
-type PetAgePoint struct {
-	Age   int `json:"age"`
-	Count int `json:"count"`
-}
-
 // rawGrowthRow is a single row from the provider growth query.
 type rawGrowthRow struct {
 	Date    time.Time
@@ -57,8 +44,6 @@ type rawGrowthRow struct {
 type StatsRepository interface {
 	GetStats(ctx context.Context) (*AdminStats, error)
 	GetProviderGrowth(ctx context.Context, rangeParam string) (*ProviderGrowthResponse, error)
-	GetPetSpeciesDistribution(ctx context.Context) ([]PetSpeciesPoint, error)
-	GetPetAgeDistribution(ctx context.Context, species string) ([]PetAgePoint, error)
 }
 
 type statsRepo struct {
@@ -214,65 +199,6 @@ func (r *statsRepo) GetProviderGrowth(ctx context.Context, rangeParam string) (*
 		Interval: interval,
 		Data:     data,
 	}, nil
-}
-
-func (r *statsRepo) GetPetSpeciesDistribution(ctx context.Context) ([]PetSpeciesPoint, error) {
-	rows, err := r.db.QueryContext(ctx, `SELECT species, COUNT(*) FROM pets GROUP BY species ORDER BY count DESC`)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var points []PetSpeciesPoint
-	for rows.Next() {
-		var p PetSpeciesPoint
-		if err := rows.Scan(&p.Species, &p.Count); err != nil {
-			return nil, err
-		}
-		points = append(points, p)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	if points == nil {
-		points = []PetSpeciesPoint{}
-	}
-	return points, nil
-}
-
-func (r *statsRepo) GetPetAgeDistribution(ctx context.Context, species string) ([]PetAgePoint, error) {
-	query := `SELECT
-			CASE
-				WHEN EXTRACT(YEAR FROM AGE(birth_date)) >= 10 THEN 10
-				ELSE FLOOR(EXTRACT(YEAR FROM AGE(birth_date)))::int
-			END AS age,
-			COUNT(*)
-		FROM pets
-		WHERE ($1 = '' OR species = $1) AND birth_date IS NOT NULL
-		GROUP BY 1
-		ORDER BY 1`
-
-	rows, err := r.db.QueryContext(ctx, query, species)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var points []PetAgePoint
-	for rows.Next() {
-		var p PetAgePoint
-		if err := rows.Scan(&p.Age, &p.Count); err != nil {
-			return nil, err
-		}
-		points = append(points, p)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	if points == nil {
-		points = []PetAgePoint{}
-	}
-	return points, nil
 }
 
 func (r *statsRepo) scanGroupBy(ctx context.Context, query string, out map[string]int) error {

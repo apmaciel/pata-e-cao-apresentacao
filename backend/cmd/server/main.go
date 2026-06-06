@@ -144,12 +144,6 @@ func main() {
 	auth.DELETE("/logout", authH.Logout)
 	auth.POST("/password-reset/request", authH.RequestPasswordReset)
 	auth.POST("/password-reset/confirm", authH.ConfirmPasswordReset)
-	auth.GET("/profile", authH.GetProfile, jwtMw)
-	auth.PUT("/profile", authH.UpdateProfile, jwtMw)
-	auth.DELETE("/profile", authH.DeleteProfile, jwtMw)
-
-	// Users (profile access gated by ownership, admin role, or booking relationship)
-	api.GET("/users/:id", authH.GetUserProfile, jwtMw)
 
 	// Providers
 	providers := api.Group("/providers")

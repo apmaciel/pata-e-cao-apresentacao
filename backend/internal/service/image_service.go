@@ -26,10 +26,8 @@ type ImageType string
 const (
 	ImageTypeLogo     ImageType = "logo"
 	ImageTypeFacility ImageType = "facility"
-	ImageTypePet      ImageType = "pet"
 	ImageTypeDocument ImageType = "document"
 	ImageTypeProvider ImageType = "provider"
-	ImageTypeAvatar   ImageType = "avatar"
 )
 
 // imageConstraints holds validation rules per image category.
@@ -55,12 +53,6 @@ var constraints = map[ImageType]imageConstraints{
 		MaxBytes:  5 * 1024 * 1024,
 		MimeTypes: []string{"image/jpeg"},
 	},
-	ImageTypePet: {
-		MinWidth: 200, MaxWidth: 4000,
-		MinHeight: 200, MaxHeight: 4000,
-		MaxBytes:  2 * 1024 * 1024,
-		MimeTypes: []string{"image/jpeg", "image/png"},
-	},
 	ImageTypeDocument: {
 		MinWidth: 0, MaxWidth: 0, // dimension check skipped for documents
 		MinHeight: 0, MaxHeight: 0,
@@ -71,12 +63,6 @@ var constraints = map[ImageType]imageConstraints{
 		MinWidth: 100, MaxWidth: 4000,
 		MinHeight: 100, MaxHeight: 4000,
 		MaxBytes:  2 * 1024 * 1024,
-		MimeTypes: []string{"image/jpeg", "image/png"},
-	},
-	ImageTypeAvatar: {
-		MinWidth: 100, MaxWidth: 1000,
-		MinHeight: 100, MaxHeight: 1000,
-		MaxBytes:  1 * 1024 * 1024,
 		MimeTypes: []string{"image/jpeg", "image/png"},
 	},
 }
