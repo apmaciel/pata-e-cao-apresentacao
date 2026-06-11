@@ -247,7 +247,7 @@ URL base: `http://localhost:8080/api`
 - `POST /providers/register` - Cadastrar-se como provedor (público, cadastro e inscrição combinados)
 - `POST /providers/apply` - Candidatar-se como provedor (usuário existente)
 - `POST /providers/onboarding/validate` - Validar token de integração
-- `POST `/providers/onboarding/complete` - Configuração completa do perfil de integração
+- `POST /providers/onboarding/complete` - Configuração completa do perfil de integração
 
 ### Administração
 - `GET /admin/stats` - Contagens agregadas do painel
@@ -259,7 +259,7 @@ URL base: `http://localhost:8080/api`
 - `POST /admin/providers/:id/approve` - Aprovar provedor (retorna token de integração)
 - `POST /admin/providers/:id/reject` - Rejeitar provedor
 - `POST /admin/providers/:id/suspend` - Suspender provedor
-- `POST `/admin/providers/:id/unsuspend` - Reativar provedor
+- `POST /admin/providers/:id/unsuspend` - Reativar provedor
 - `POST /admin/providers/:id/regenerate-token` - Regenerar token de integração
 - `DELETE /admin/providers/:id` - Excluir provedor rejeitado
 - `POST /admin/search/reindex` - Recriar índice Typesense
