@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import '../i18n.config';
-import { providers, uploadImage, type ProviderDetail, type SocialLinks, type GalleryImage } from '../services/api';
+import { providers, uploadImage, invalidateSWImageCache, type ProviderDetail, type SocialLinks, type GalleryImage } from '../services/api';
 import { API_URL } from '../utils/config';
 import {
   FiCamera, FiEdit2, FiCheck, FiX, FiSave, FiArrowLeft,
@@ -91,6 +91,8 @@ export default function ProviderProfileEdit({ provider, onSaved, onCancel }: Pro
     try {
       await providers.removeGalleryImage(imageId);
       setGalleryImages((prev) => prev.filter((g) => g.imageId !== imageId));
+      // Purge the removed image from the SW cache.
+      invalidateSWImageCache(imageId);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : t('auth.errors.generic'));
     }
@@ -127,6 +129,10 @@ export default function ProviderProfileEdit({ provider, onSaved, onCancel }: Pro
         acceptsIntact,
         socialLinks: Object.keys(socialLinks).length > 0 ? socialLinks : undefined,
       });
+      // If the logo changed, purge the old one from the SW cache.
+      if (logoChanged && provider.logoImageId) {
+        invalidateSWImageCache(provider.logoImageId);
+      }
       setSuccessMsg(t('providerProfile.saved'));
       onSaved(updated);
     } catch (err: unknown) {

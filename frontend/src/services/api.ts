@@ -197,7 +197,34 @@ export async function uploadImage(file: File, type: string = 'pet', token?: stri
     throw new Error(message);
   }
 
-  return response.json();
+  const result = await response.json();
+
+  // Purge any stale SW cache entry for this image ID so the next
+  // request goes straight to the backend (which has the new file).
+  invalidateSWImageCache(result.imageId);
+
+  return result;
+}
+
+// ─── Service Worker cache helpers ─────────────────────────────────────────────
+
+/** Tell the SW to purge cached entries for a specific image ID. */
+export function invalidateSWImageCache(imageId: string) {
+  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+    navigator.serviceWorker.controller.postMessage({
+      type: 'INVALIDATE_IMAGE',
+      imageId,
+    });
+  }
+}
+
+/** Tell the SW to purge all non-default cached images (e.g. after mass update). */
+export function invalidateSWAllImageCache() {
+  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+    navigator.serviceWorker.controller.postMessage({
+      type: 'INVALIDATE_ALL_IMAGES',
+    });
+  }
 }
 
 // ─── Core fetch wrapper ───────────────────────────────────────────────────────
@@ -241,11 +268,18 @@ async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> 
     headers['Authorization'] = `Bearer ${_accessToken}`;
   }
 
-  let response = await fetch(`${API_URL}${path}`, {
+  // Use no-cache for GET requests so the browser always revalidates with
+  // the server before serving cached JSON (avoids stale provider lists).
+  const fetchOpts: RequestInit = {
     ...options,
     headers,
-    credentials: 'include', // include cookies for httpOnly refresh token
-  });
+    credentials: 'include',
+  };
+  if (!options.method || options.method === 'GET') {
+    fetchOpts.cache = 'no-cache';
+  }
+
+  let response = await fetch(`${API_URL}${path}`, fetchOpts);
 
   // On 401, attempt a token refresh and retry once. Skip for refresh itself
   // and for auth endpoints to avoid infinite loops.

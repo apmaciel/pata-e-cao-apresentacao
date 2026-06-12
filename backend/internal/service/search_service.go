@@ -186,6 +186,12 @@ func (s *TypesenseSearch) DeleteProvider(ctx context.Context, id string) error {
 }
 
 func (s *TypesenseSearch) Reindex(ctx context.Context, providers []models.Provider) error {
+	// Wipe the collection first so that docs deleted from Postgres don't
+	// linger in Typesense (upsert alone never removes stale entries).
+	_, _ = s.client.Collection(ProvidersCollection).Documents().Delete(ctx, &api.DeleteDocumentsParams{
+		FilterBy: pointer.String("id:*"),
+	})
+
 	if len(providers) == 0 {
 		return nil
 	}

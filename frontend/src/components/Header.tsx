@@ -195,9 +195,9 @@ export default function Header() {
               <img
                 src="/pec-logo.jpeg"
                 alt="PATA & CÃO"
-                width={120}
-                height={48}
-                className="h-12 w-auto object-contain"
+                width={240}
+                height={96}
+                className="h-24 w-auto object-contain"
               />
             </a>
 

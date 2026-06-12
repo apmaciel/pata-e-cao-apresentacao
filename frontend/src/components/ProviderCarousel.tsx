@@ -6,11 +6,19 @@ import '../i18n.config';
 
 const CARD_WIDTH_REM = 16; // w-64
 const GAP_REM = 1;         // gap-4
-const LIMIT = 15;
+const MAX_DISPLAY = 15;
 const REFRESH_INTERVAL_MS = 30_000;
 
-function randomOffset(max: number) {
-  return Math.floor(Math.random() * Math.max(1, max));
+/** Pick up to `n` random items from an array (Fisher-Yates partial shuffle). */
+function pickRandom<T>(arr: T[], n: number): T[] {
+  const copy = [...arr];
+  const len = copy.length;
+  const limit = Math.min(n, len);
+  for (let i = 0; i < limit; i++) {
+    const j = i + Math.floor(Math.random() * (len - i));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy.slice(0, limit);
 }
 
 export default function ProviderCarousel() {
@@ -21,15 +29,15 @@ export default function ProviderCarousel() {
   const trackRef = useRef<HTMLDivElement>(null);
 
   const fetchProviders = useCallback(() => {
-    // Request a random page so the carousel stays fresh.
-    const offset = randomOffset(60);
-    providersApi.list({ limit: LIMIT, offset }).then((data) => {
+    // Fetch a large pool of approved providers, then randomly pick a subset
+    // so the carousel stays fresh across reloads without the risk of
+    // landing on an empty page when there are few providers.
+    providersApi.list({ limit: 50 }).then((data) => {
       const list = data.providers ?? [];
-      // Filter to providers with at least one service.
-      const filtered = list.filter((p: ProviderListItem) =>
+      const withServices = list.filter((p: ProviderListItem) =>
         (p.services || []).length > 0
       );
-      setProviders(filtered);
+      setProviders(pickRandom(withServices, MAX_DISPLAY));
       setLoading(false);
     }).catch(() => {
       setLoading(false);
