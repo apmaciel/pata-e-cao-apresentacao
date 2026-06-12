@@ -231,9 +231,14 @@ func (s *ProviderService) RejectProvider(ctx context.Context, id, adminID, reaso
 
 // DeleteOwnProvider allows an approved provider to permanently delete their own
 // account. The caller must provide their password for confirmation — the password
-// is verified against the stored hash before proceeding. This cascades to delete
-// the user, provider, and all related data (bookings, reviews, tokens, etc.).
-// Also removes the provider from the Typesense index if present.
+// is verified against the stored hash before proceeding.
+//
+// Deleting the user cascades through every FK relationship:
+//   users → providers (ON DELETE CASCADE)
+//   providers → reviews, gallery images, onboarding tokens, audit records
+//   users → refresh_tokens (ON DELETE CASCADE)
+//
+// The provider is also removed from the Typesense index if present.
 func (s *ProviderService) DeleteOwnProvider(ctx context.Context, userID, password string) error {
 	user, err := s.users.GetByID(ctx, userID)
 	if err != nil {
@@ -258,9 +263,10 @@ func (s *ProviderService) DeleteOwnProvider(ctx context.Context, userID, passwor
 	// Remove from search index first so the provider disappears immediately.
 	s.deleteFromSearch(ctx, provider.ID)
 
-	// Delete the provider — cascades to all related data via FK constraints.
-	if err := s.providers.Delete(ctx, provider.ID); err != nil {
-		return fmt.Errorf("INTERNAL_ERROR: failed to delete provider account")
+	// Delete the user — the FK cascade (users → providers → reviews, gallery,
+	// tokens, audit) tears down every piece of data owned by this account.
+	if err := s.users.Delete(ctx, userID); err != nil {
+		return fmt.Errorf("INTERNAL_ERROR: failed to delete account")
 	}
 
 	return nil
