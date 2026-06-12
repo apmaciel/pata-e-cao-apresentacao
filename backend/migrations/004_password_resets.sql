@@ -1,9 +1,9 @@
--- Password recovery tokens.
+-- Tokens de recuperação de senha.
 --
--- We store SHA-256(token) so a leaked DB snapshot never reveals usable links.
--- The raw token is only ever returned to the user via the recovery URL (and,
--- in dev mode, surfaced in the JSON response so engineers can test without
--- a real mail relay). Tokens are single-use: used_at flips on confirm.
+-- Armazenamos SHA-256(token) para que um snapshot vazado do BD nunca revele
+-- links utilizáveis. O token bruto só é retornado ao usuário via URL de
+-- recuperação (e, em modo dev, exposto na resposta JSON para testes sem
+-- relay de email real). Tokens são de uso único: used_at é preenchido na confirmação.
 
 CREATE TABLE password_resets (
     id         UUID         PRIMARY KEY DEFAULT gen_random_uuid(),

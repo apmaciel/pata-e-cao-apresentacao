@@ -1,7 +1,7 @@
--- Add ON DELETE CASCADE to reviews.reviewer_id → users(id) so that
--- when a user deletes their account (provider self-delete flow), their
--- own reviews are automatically cleaned up as well.
--- Without this FK, a user who has authored reviews cannot be deleted.
+-- Adiciona ON DELETE CASCADE a reviews.reviewer_id → users(id) para que
+-- quando um usuário exclui sua conta (fluxo de autoexclusão de prestador),
+-- suas próprias avaliações sejam automaticamente limpas também.
+-- Sem esta FK, um usuário que escreveu avaliações não pode ser excluído.
 
 ALTER TABLE reviews DROP CONSTRAINT IF EXISTS reviews_reviewer_id_fkey;
 ALTER TABLE reviews ADD CONSTRAINT reviews_reviewer_id_fkey

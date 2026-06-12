@@ -13,14 +13,14 @@ const (
 	ctxKeyUserRole = "userRole"
 )
 
-// Claims is the JWT payload.
+// Claims é o payload do JWT.
 type Claims struct {
 	jwt.RegisteredClaims
 	Role string `json:"role"`
 }
 
-// JWTAuth returns an Echo middleware that validates Bearer JWT tokens.
-// On success it stores userID and role in the context.
+// JWTAuth retorna um middleware Echo que valida tokens JWT Bearer.
+// Em caso de sucesso, armazena userID e role no contexto.
 func JWTAuth(secret string) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
@@ -47,8 +47,8 @@ func JWTAuth(secret string) echo.MiddlewareFunc {
 	}
 }
 
-// RequireAdmin rejects requests from non-admin users.
-// Must be placed after JWTAuth in the middleware chain.
+// RequireAdmin rejeita requisições de usuários não-admin.
+// Deve ser posicionado após JWTAuth na cadeia de middleware.
 func RequireAdmin() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
@@ -63,7 +63,7 @@ func RequireAdmin() echo.MiddlewareFunc {
 	}
 }
 
-// RequireProvider rejects requests from non-provider (and non-admin) users.
+// RequireProvider rejeita requisições de usuários não-prestador (e não-admin).
 func RequireProvider() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
@@ -79,20 +79,20 @@ func RequireProvider() echo.MiddlewareFunc {
 	}
 }
 
-// GetUserID retrieves the authenticated user's ID from the Echo context.
-// Returns an empty string if not set.
+// GetUserID recupera o ID do usuário autenticado do contexto Echo.
+// Retorna string vazia se não estiver definido.
 func GetUserID(c echo.Context) string {
 	v, _ := c.Get(ctxKeyUserID).(string)
 	return v
 }
 
-// GetUserRole retrieves the authenticated user's role from the Echo context.
+// GetUserRole recupera o papel (role) do usuário autenticado do contexto Echo.
 func GetUserRole(c echo.Context) string {
 	v, _ := c.Get(ctxKeyUserRole).(string)
 	return v
 }
 
-// extractBearer pulls the raw JWT string from the Authorization header.
+// extractBearer extrai a string JWT bruta do header Authorization.
 func extractBearer(c echo.Context) (string, error) {
 	header := c.Request().Header.Get("Authorization")
 	parts := strings.SplitN(header, " ", 2)
@@ -102,7 +102,7 @@ func extractBearer(c echo.Context) (string, error) {
 	return strings.TrimSpace(parts[1]), nil
 }
 
-// parseJWT validates the token string and returns the claims.
+// parseJWT valida a string do token e retorna as claims.
 func parseJWT(tokenStr, secret string) (*Claims, error) {
 	claims := &Claims{}
 	_, err := jwt.ParseWithClaims(tokenStr, claims, func(t *jwt.Token) (interface{}, error) {

@@ -11,7 +11,7 @@ import (
 	"pata-cao/internal/models"
 )
 
-// UserRepository defines persistence operations for users.
+// UserRepository define operações de persistência para usuários.
 type UserRepository interface {
 	Create(ctx context.Context, user *models.User) error
 	GetByEmail(ctx context.Context, email string) (*models.User, error)
@@ -23,7 +23,7 @@ type userRepo struct {
 	db *sqlx.DB
 }
 
-// NewUserRepository returns a UserRepository backed by PostgreSQL.
+// NewUserRepository retorna um UserRepository com PostgreSQL.
 func NewUserRepository(db *sqlx.DB) UserRepository {
 	return &userRepo{db: db}
 }
@@ -68,11 +68,10 @@ func (r *userRepo) GetByID(ctx context.Context, id string) (*models.User, error)
 	return &u, nil
 }
 
-// Delete removes a user by ID. The users table has ON DELETE CASCADE to
-// providers (via providers.user_id), which in turn cascades to reviews,
-// gallery images, onboarding tokens, verification audit records, and
-// refresh_tokens. Callers should remove the provider from the Typesense
-// index before invoking this.
+// Delete remove um usuário por ID. A tabela users tem ON DELETE CASCADE para
+// providers (via providers.user_id), que por sua vez cascateia para reviews,
+// gallery images, onboarding tokens, registros de auditoria e refresh_tokens.
+// Chamadores devem remover o prestador do índice Typesense antes de invocar isso.
 func (r *userRepo) Delete(ctx context.Context, id string) error {
 	_, err := r.db.ExecContext(ctx, `DELETE FROM users WHERE id = $1`, id)
 	return err

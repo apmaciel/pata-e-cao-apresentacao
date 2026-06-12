@@ -5,10 +5,10 @@ import (
 	"time"
 )
 
-// Provider represents a verified service provider profile.
-// Status values: pending, under_review, approved, rejected.
-// BackgroundCheckStatus values: pending, passed, failed.
-// AccountType values: pessoa_fisica, pessoa_juridica.
+// Provider representa um perfil de prestador de serviço verificado.
+// Valores de Status: pending, under_review, approved, rejected.
+// Valores de BackgroundCheckStatus: pending, passed, failed.
+// Valores de AccountType: pessoa_fisica, pessoa_juridica.
 type Provider struct {
 	ID                    string   `db:"id" json:"id"`
 	UserID                string   `db:"user_id" json:"userId"`
@@ -23,7 +23,7 @@ type Provider struct {
 	ReviewCount           int      `db:"review_count" json:"reviewCount"`
 	LogoImageID           *string  `db:"logo_image_id" json:"logoImageId,omitempty"`
 
-	// Application fields — collected via the public registration form.
+	// Campos de aplicação — coletados via formulário público de registro.
 	AccountType             string     `db:"account_type" json:"accountType"`
 	BirthDate               *time.Time `db:"birth_date" json:"birthDate,omitempty"`
 	DocumentType            *string    `db:"document_type" json:"documentType,omitempty"`
@@ -33,7 +33,7 @@ type Provider struct {
 	LegalRepresentativeName *string    `db:"legal_representative_name" json:"legalRepresentativeName,omitempty"`
 	TaxID                   *string    `db:"tax_id" json:"taxId,omitempty"`
 
-	// Onboarding / service-preference fields.
+	// Campos de onboarding / preferências de serviço.
 	AcceptsDogs           bool       `db:"accepts_dogs" json:"acceptsDogs"`
 	AcceptsCats           bool       `db:"accepts_cats" json:"acceptsCats"`
 	AcceptsNeutered       bool       `db:"accepts_neutered" json:"acceptsNeutered"`
@@ -41,26 +41,26 @@ type Provider struct {
 	Whatsapp              *string    `db:"whatsapp" json:"whatsapp,omitempty"`
 	OnboardingCompletedAt *time.Time `db:"onboarding_completed_at" json:"onboardingCompletedAt,omitempty"`
 
-	// Social links (mirrors users.social_links pattern).
+	// Links sociais (espelha o padrão users.social_links).
 	SocialLinks json.RawMessage `db:"social_links" json:"socialLinks,omitempty"`
 
-	// Rate-limit tracking for restricted fields (one change per calendar month).
+	// Controle de rate-limit para campos restritos (uma alteração por mês).
 	LastBusinessNameChange *time.Time `db:"last_business_name_change" json:"-"`
 	LastLogoChange         *time.Time `db:"last_logo_change" json:"-"`
 	LastServiceChange      *time.Time `db:"last_service_change" json:"-"`
 
-	// Populated only by the admin list query (LEFT JOIN users).
+	// Preenchido apenas pela query de listagem admin (LEFT JOIN users).
 	Email string `json:"email,omitempty"`
 	Phone string `json:"phone,omitempty"`
 
-	// Gallery images — loaded separately via ListGalleryImages.
+	// Imagens da galeria — carregadas separadamente via ListGalleryImages.
 	GalleryImages []ProviderGalleryImage `json:"galleryImages,omitempty"`
 
 	CreatedAt time.Time `db:"created_at" json:"createdAt"`
 	UpdatedAt time.Time `db:"updated_at" json:"updatedAt"`
 }
 
-// ProviderOnboardingToken represents a one-time setup token.
+// ProviderOnboardingToken representa um token de configuração única.
 type ProviderOnboardingToken struct {
 	ID         string     `db:"id" json:"id"`
 	ProviderID string     `db:"provider_id" json:"providerId"`
@@ -70,7 +70,7 @@ type ProviderOnboardingToken struct {
 	CreatedAt  time.Time  `db:"created_at" json:"createdAt"`
 }
 
-// ProviderGalleryImage represents a single image in a provider's gallery.
+// ProviderGalleryImage representa uma única imagem na galeria de um prestador.
 type ProviderGalleryImage struct {
 	ID         string    `db:"id" json:"id"`
 	ProviderID string    `db:"provider_id" json:"providerId"`
@@ -79,7 +79,7 @@ type ProviderGalleryImage struct {
 	CreatedAt  time.Time `db:"created_at" json:"createdAt"`
 }
 
-// AutocompleteSuggestion is a lightweight provider result for search autocomplete.
+// AutocompleteSuggestion é um resultado leve de prestador para autocomplete de busca.
 type AutocompleteSuggestion struct {
 	ID           string   `json:"id"`
 	BusinessName string   `json:"businessName"`
@@ -88,9 +88,9 @@ type AutocompleteSuggestion struct {
 	Location     *string  `json:"location,omitempty"`
 }
 
-// ProviderAuditEntry represents a single row in the provider_verification_audit
-// table. Admin-only data; exposed via the admin API so the dashboard can show
-// who approved/suspended/unsuspended each provider and why.
+// ProviderAuditEntry representa uma linha na tabela provider_verification_audit.
+// Dados restritos a admin; expostos via API admin para o dashboard mostrar
+// quem aprovou/suspendeu/removeu suspensão de cada prestador e o motivo.
 type ProviderAuditEntry struct {
 	ID             string    `db:"id" json:"id"`
 	ProviderID     string    `db:"provider_id" json:"providerId"`

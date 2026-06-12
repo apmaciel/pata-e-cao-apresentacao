@@ -24,7 +24,7 @@ type reviewRepo struct {
 	db *sqlx.DB
 }
 
-// NewReviewRepository returns a ReviewRepository backed by PostgreSQL.
+// NewReviewRepository retorna um ReviewRepository com PostgreSQL.
 func NewReviewRepository(db *sqlx.DB) ReviewRepository {
 	return &reviewRepo{db: db}
 }

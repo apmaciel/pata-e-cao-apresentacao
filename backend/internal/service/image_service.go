@@ -20,7 +20,7 @@ import (
 	"pata-cao/internal/models"
 )
 
-// ImageType enumerates the supported image categories.
+// ImageType enumera as categorias de imagem suportadas.
 type ImageType string
 
 const (
@@ -30,7 +30,7 @@ const (
 	ImageTypeProvider ImageType = "provider"
 )
 
-// imageConstraints holds validation rules per image category.
+// imageConstraints contém regras de validação por categoria de imagem.
 type imageConstraints struct {
 	MinWidth  int
 	MaxWidth  int
@@ -54,7 +54,7 @@ var constraints = map[ImageType]imageConstraints{
 		MimeTypes: []string{"image/jpeg"},
 	},
 	ImageTypeDocument: {
-		MinWidth: 0, MaxWidth: 0, // dimension check skipped for documents
+		MinWidth: 0, MaxWidth: 0, // verificação de dimensão ignorada para documentos
 		MinHeight: 0, MaxHeight: 0,
 		MaxBytes:  10 * 1024 * 1024,
 		MimeTypes: []string{"application/pdf", "image/jpeg", "image/png"},
@@ -67,22 +67,22 @@ var constraints = map[ImageType]imageConstraints{
 	},
 }
 
-// cachedImage holds image bytes + metadata in the LRU.
+// cachedImage mantém bytes da imagem + metadados no LRU.
 type cachedImage struct {
 	Data     []byte
 	Metadata *models.ImageMetadata
 }
 
-// ImageService handles image retrieval, validation, and caching.
+// ImageService trata recuperação, validação e cache de imagens.
 type ImageService struct {
 	cache        *lru.Cache[string, *cachedImage]
-	storageType  string // "local" or "seaweedfs"
+	storageType  string // "local" ou "seaweedfs"
 	storagePath  string
 	seaweedFSURL string
-	baseURL      string // e.g. "https://api.pata-cao.com" — used to construct metadata URLs
+	baseURL      string // ex.: "https://api.pata-cao.com" — usado para construir URLs de metadados
 }
 
-// NewImageService creates a new ImageService with an LRU cache of given size.
+// NewImageService cria um novo ImageService com cache LRU do tamanho especificado.
 func NewImageService(cacheSize int, storageType, storagePath, seaweedFSURL string) (*ImageService, error) {
 	c, err := lru.New[string, *cachedImage](cacheSize)
 	if err != nil {
@@ -96,10 +96,10 @@ func NewImageService(cacheSize int, storageType, storagePath, seaweedFSURL strin
 	}, nil
 }
 
-// SetBaseURL allows the server to inject the public base URL after startup.
+// SetBaseURL permite que o servidor injete a URL base pública após a inicialização.
 func (s *ImageService) SetBaseURL(base string) { s.baseURL = base }
 
-// FetchImage returns raw bytes and whether it was a cache hit.
+// FetchImage retorna bytes brutos e se foi cache hit.
 func (s *ImageService) FetchImage(imageID string) ([]byte, bool, error) {
 	if item, ok := s.cache.Get(imageID); ok {
 		return item.Data, true, nil
@@ -115,7 +115,7 @@ func (s *ImageService) FetchImage(imageID string) ([]byte, bool, error) {
 	return data, false, nil
 }
 
-// GetMetadata returns metadata for an image (fetches + caches if needed).
+// GetMetadata retorna metadados de uma imagem (busca + cacheia se necessário).
 func (s *ImageService) GetMetadata(imageID string) (*models.ImageMetadata, error) {
 	if item, ok := s.cache.Get(imageID); ok && item.Metadata != nil {
 		return item.Metadata, nil
@@ -131,16 +131,16 @@ func (s *ImageService) GetMetadata(imageID string) (*models.ImageMetadata, error
 	return meta, nil
 }
 
-// InvalidateCache removes one or more images from the LRU.
+// InvalidateCache remove uma ou mais imagens do LRU.
 func (s *ImageService) InvalidateCache(imageIDs []string) {
 	for _, id := range imageIDs {
 		s.cache.Remove(id)
 	}
 }
 
-// StoreImage persists image bytes and invalidates any cached entry.
-// When storageType is "seaweedfs" the bytes are PUT to the SeaweedFS filer;
-// otherwise they are written to the local filesystem.
+// StoreImage persiste bytes da imagem e invalida qualquer entrada em cache.
+// Quando storageType é "seaweedfs", os bytes são enviados via PUT ao filer do SeaweedFS;
+// caso contrário, são escritos no sistema de arquivos local.
 func (s *ImageService) StoreImage(imageID string, data []byte) error {
 	if s.storageType == "seaweedfs" {
 		if s.seaweedFSURL == "" {
@@ -175,7 +175,7 @@ func (s *ImageService) StoreImage(imageID string, data []byte) error {
 	return nil
 }
 
-// ValidateImage checks magic bytes, MIME type, dimensions, and file size.
+// ValidateImage verifica magic bytes, tipo MIME, dimensões e tamanho do arquivo.
 func (s *ImageService) ValidateImage(data []byte, imgType ImageType) error {
 	c, ok := constraints[imgType]
 	if !ok {
@@ -243,7 +243,7 @@ func (s *ImageService) loadFromStorage(imageID string) ([]byte, error) {
 	return nil, fmt.Errorf("image %q not found", imageID)
 }
 
-// buildMetadata computes SHA-256 hash, dimensions, and public URL.
+// buildMetadata calcula hash SHA-256, dimensões e URL pública.
 func (s *ImageService) buildMetadata(imageID string, data []byte) *models.ImageMetadata {
 	mimeType := http.DetectContentType(data)
 

@@ -13,32 +13,32 @@ import (
 	"pata-cao/internal/models"
 )
 
-// ProvidersCollection is the Typesense collection name for approved providers.
+// ProvidersCollection é o nome da coleção do Typesense para prestadores aprovados.
 const ProvidersCollection = "providers"
 
-// SearchParams holds the inputs for SearchService.SearchProviders and the
-// service-layer ListProviders entry point. It mirrors the public query
-// contract on GET /api/providers.
+// SearchParams contém as entradas para SearchService.SearchProviders e o ponto
+// de entrada ListProviders da camada de serviço. Espelha o contrato público
+// de query do GET /api/providers.
 type SearchParams struct {
 	Query          string
 	Service        string
-	SortBy         string // "rating" (default) or "reviews"
-	Page           int    // 1-based
-	PerPage        int    // capped at 50 by callers
-	AcceptsDogs    *bool  // nil = no filter
-	AcceptsCats    *bool  // nil = no filter
-	AcceptsNeutered *bool // nil = no filter
-	AcceptsIntact  *bool  // nil = no filter
+	SortBy         string // "rating" (padrão) ou "reviews"
+	Page           int    // baseado em 1
+	PerPage        int    // limitado a 50 pelos chamadores
+	AcceptsDogs    *bool  // nil = sem filtro
+	AcceptsCats    *bool  // nil = sem filtro
+	AcceptsNeutered *bool // nil = sem filtro
+	AcceptsIntact  *bool  // nil = sem filtro
 }
 
-// FacetValue is a single facet bucket returned alongside search results.
+// FacetValue é um único bucket de faceta retornado junto com resultados de busca.
 type FacetValue struct {
 	Value string `json:"value"`
 	Count int    `json:"count"`
 }
 
-// SearchResult is the unified shape returned by both the Typesense and
-// PostgreSQL paths so handlers can serialize it directly to JSON.
+// SearchResult é o formato unificado retornado tanto pelo caminho Typesense
+// quanto pelo PostgreSQL para que os handlers possam serializar diretamente para JSON.
 type SearchResult struct {
 	Providers []models.Provider       `json:"providers"`
 	Total     int                     `json:"total"`
@@ -47,7 +47,7 @@ type SearchResult struct {
 	Facets    map[string][]FacetValue `json:"facets"`
 }
 
-// SearchService manages the Typesense provider index.
+// SearchService gerencia o índice de prestadores do Typesense.
 type SearchService interface {
 	SearchProviders(ctx context.Context, params SearchParams) (*SearchResult, error)
 	AutocompleteProviders(ctx context.Context, query string) ([]models.AutocompleteSuggestion, error)
@@ -56,14 +56,15 @@ type SearchService interface {
 	Reindex(ctx context.Context, providers []models.Provider) error
 }
 
-// TypesenseSearch is the Typesense-backed SearchService implementation.
+// TypesenseSearch é a implementação de SearchService com Typesense.
 type TypesenseSearch struct {
 	client *typesense.Client
 }
 
-// NewTypesenseSearch builds a Typesense client and ensures the providers
-// collection exists. The caller is expected to skip wiring this entirely
-// when TYPESENSE_URL is unset (search then degrades to the Postgres path).
+// NewTypesenseSearch constrói um cliente Typesense e garante que a coleção
+// de prestadores exista. O chamador deve pular a configuração deste serviço
+// completamente quando TYPESENSE_URL não estiver definido (busca então degrada
+// para o caminho Postgres).
 func NewTypesenseSearch(ctx context.Context, serverURL, apiKey string) (*TypesenseSearch, error) {
 	if serverURL == "" {
 		return nil, fmt.Errorf("typesense URL is required")
@@ -79,9 +80,9 @@ func NewTypesenseSearch(ctx context.Context, serverURL, apiKey string) (*Typesen
 	return s, nil
 }
 
-// ensureCollection creates the providers collection on first boot, or
-// updates it if the collection exists but is missing the status field
-// (migration from schema before status filtering was added).
+// ensureCollection cria a coleção providers no primeiro boot, ou
+// a atualiza se a coleção existir mas estiver faltando o campo status
+// (migração do schema antes da filtragem por status ser adicionada).
 func (s *TypesenseSearch) ensureCollection(ctx context.Context) error {
 	cols, err := s.client.Collections().Retrieve(ctx)
 	if err != nil {
@@ -300,7 +301,7 @@ func (s *TypesenseSearch) SearchProviders(ctx context.Context, params SearchPara
 }
 
 // AutocompleteProviders returns lightweight suggestions for search-as-you-type.
-// Uses Typesense with a small per_page to keep responses fast.
+// Usa Typesense com per_page pequeno para manter respostas rápidas.
 func (s *TypesenseSearch) AutocompleteProviders(ctx context.Context, query string) ([]models.AutocompleteSuggestion, error) {
 	if query == "" {
 		return []models.AutocompleteSuggestion{}, nil
@@ -358,9 +359,9 @@ func docToSuggestion(doc map[string]interface{}) models.AutocompleteSuggestion {
 	return s
 }
 
-// docToProvider reconstructs a Provider from the Typesense doc representation.
-// Only the fields stored in the index are populated; userId/timestamps remain
-// zero-valued, which is acceptable for list responses.
+// docToProvider reconstrói um Provider a partir da representação doc do Typesense.
+// Apenas os campos armazenados no índice são preenchidos; userId/timestamps
+// permanecem zerados, o que é aceitável para respostas de listagem.
 func docToProvider(doc map[string]interface{}) (models.Provider, error) {
 	b, err := json.Marshal(doc)
 	if err != nil {

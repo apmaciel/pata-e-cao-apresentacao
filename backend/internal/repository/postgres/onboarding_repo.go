@@ -11,7 +11,7 @@ import (
 	"pata-cao/internal/models"
 )
 
-// OnboardingTokenRepository persists one-time provider setup tokens.
+// OnboardingTokenRepository persiste tokens de configuração única para prestadores.
 type OnboardingTokenRepository interface {
 	Save(ctx context.Context, providerID, rawToken string, expiresAt time.Time) error
 	GetByHash(ctx context.Context, rawToken string) (*models.ProviderOnboardingToken, error)

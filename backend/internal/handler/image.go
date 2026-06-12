@@ -17,22 +17,22 @@ import (
 	"pata-cao/internal/service"
 )
 
-// docPrefix is prepended to document-type image IDs so the serve path can
-// distinguish provider identity documents from public images (pet photos,
-// logos, facility photos) and gate them behind admin authentication.
+// docPrefix é prefixado aos IDs de imagem de documentos para que o caminho
+// de serviço possa distinguir documentos de identidade de imagens públicas
+// (fotos de pets, logos, fotos de instalações) e protegê-los com autenticação admin.
 const docPrefix = "doc-"
 
-// ImageHandler serves images and manages the image cache.
+// ImageHandler serve imagens e gerencia o cache de imagens.
 type ImageHandler struct {
 	images           *service.ImageService
-	allowedOrigins   map[string]bool // set of allowed Origin header values
+	allowedOrigins   map[string]bool // conjunto de valores permitidos do header Origin
 	jwtSecret        string
 	onboardingTokens postgres.OnboardingTokenRepository
 }
 
-// NewImageHandler creates a new ImageHandler. allowedOriginsCSV is the
-// comma-separated CORS_ORIGINS value; it is parsed into a set for O(1) lookup.
-// jwtSecret is used to validate admin tokens when serving document images.
+// NewImageHandler cria um novo ImageHandler. allowedOriginsCSV é o valor
+// separado por vírgulas de CORS_ORIGINS; é parseado em um set para busca O(1).
+// jwtSecret é usado para validar tokens admin ao servir imagens de documentos.
 func NewImageHandler(images *service.ImageService, allowedOriginsCSV, jwtSecret string, onboardingTokens postgres.OnboardingTokenRepository) *ImageHandler {
 	return &ImageHandler{
 		images:           images,
@@ -42,12 +42,12 @@ func NewImageHandler(images *service.ImageService, allowedOriginsCSV, jwtSecret 
 	}
 }
 
-// Handle is a single wildcard handler for GET /api/images/*.
-// Paths ending in "/metadata" are routed to GetImageMetadata; all others serve
-// the binary image. This allows imageIDs that contain slashes (e.g.
-// "partner-1/logo", "defaults/pet-placeholder").
+// Handle é um handler wildcard único para GET /api/images/*.
+// Caminhos terminando em "/metadata" são roteados para GetImageMetadata; todos
+// os outros servem a imagem binária. Isso permite imageIDs contendo barras
+// (ex.: "partner-1/logo", "defaults/pet-placeholder").
 //
-// Document images (IDs prefixed with "doc-") require admin authentication.
+// Imagens de documentos (IDs prefixados com "doc-") requerem autenticação admin.
 func (h *ImageHandler) Handle(c echo.Context) error {
 	rawPath := c.Param("*")
 	if strings.HasSuffix(rawPath, "/metadata") {
@@ -63,10 +63,9 @@ func (h *ImageHandler) Handle(c echo.Context) error {
 	return h.serveImage(c, rawPath)
 }
 
-// gateAdminForDocs returns an error if imageID is a document image and the
-// caller is not an authenticated admin. Because GET /api/images/* has no JWT
-// middleware, we manually extract and validate the token from the Authorization
-// header here.
+// gateAdminForDocs retorna um erro se imageID for uma imagem de documento e
+// o chamador não for um admin autenticado. Como GET /api/images/* não tem
+// middleware JWT, extraímos e validamos o token do header Authorization manualmente.
 func (h *ImageHandler) gateAdminForDocs(c echo.Context, imageID string) error {
 	if !strings.HasPrefix(imageID, docPrefix) {
 		return nil
@@ -96,7 +95,7 @@ func (h *ImageHandler) gateAdminForDocs(c echo.Context, imageID string) error {
 	return nil
 }
 
-// serveImage returns binary image data with full caching headers.
+// serveImage retorna dados binários da imagem com headers de cache completos.
 func (h *ImageHandler) serveImage(c echo.Context, imageID string) error {
 	data, cacheHit, err := h.images.FetchImage(imageID)
 	if err != nil {
@@ -129,7 +128,7 @@ func (h *ImageHandler) serveImage(c echo.Context, imageID string) error {
 	return c.Blob(http.StatusOK, contentType, data)
 }
 
-// serveMetadata returns JSON metadata for an image without the binary payload.
+// serveMetadata retorna metadados JSON da imagem sem o payload binário.
 func (h *ImageHandler) serveMetadata(c echo.Context, imageID string) error {
 	meta, err := h.images.GetMetadata(imageID)
 	if err != nil {
@@ -138,22 +137,22 @@ func (h *ImageHandler) serveMetadata(c echo.Context, imageID string) error {
 	return c.JSON(http.StatusOK, meta)
 }
 
-// UploadImage handles POST /api/images/upload?type=logo|facility|document|provider
+// UploadImage trata POST /api/images/upload?type=logo|facility|document|provider
 func (h *ImageHandler) UploadImage(c echo.Context) error {
 	imageType := service.ImageType(c.QueryParam("type"))
 	if imageType == "" {
 		return apiError(c, http.StatusBadRequest, "VALIDATION_ERROR", "query param 'type' is required (logo|facility|document|provider)")
 	}
 
-	// Document uploads are used by the public provider registration flow;
-	// provider uploads are used by the token-gated onboarding form — they
-	// must carry a valid onboarding token to prevent anonymous upload abuse.
-	// When a JWT Bearer token is present and the user is a provider, that
-	// also authorizes provider uploads (used by the post-onboarding profile edit).
-	// All other types require JWT authentication.
+	// Uploads de documentos são usados pelo fluxo público de registro de prestadores;
+	// uploads de provider são usados pelo formulário de onboarding com token —
+	// devem conter um token de onboarding válido para evitar abuso anônimo.
+	// Quando um token JWT Bearer está presente e o usuário é provider, isso
+	// também autoriza uploads de provider (usado pela edição pós-onboarding).
+	// Todos os outros tipos requerem autenticação JWT.
 	if imageType != service.ImageTypeDocument {
 		if imageType == service.ImageTypeProvider {
-			// Try JWT Bearer token first (post-onboarding profile edit).
+			// Tenta token JWT Bearer primeiro (edição de perfil pós-onboarding).
 			header := c.Request().Header.Get("Authorization")
 			parts := strings.SplitN(header, " ", 2)
 			if len(parts) == 2 && strings.EqualFold(parts[0], "bearer") {
@@ -166,11 +165,11 @@ func (h *ImageHandler) UploadImage(c echo.Context) error {
 					return []byte(h.jwtSecret), nil
 				})
 				if err == nil && claims.Role == "provider" {
-					// JWT-authenticated provider — fall through to upload.
+					// Provider autenticado por JWT — continua para upload.
 				} else if err == nil {
-					return apiError(c, http.StatusForbidden, "FORBIDDEN", "only providers can upload provider images")
+					return apiError(c, http.StatusForbidden, "FORBIDDEN", "apenas prestadores podem enviar imagens de provider")
 				} else {
-					// JWT invalid — fall through to onboarding token check.
+					// JWT inválido — tenta verificar token de onboarding.
 					rawToken := c.QueryParam("token")
 					if rawToken == "" {
 						return apiError(c, http.StatusUnauthorized, "UNAUTHORIZED", "onboarding token or JWT is required for provider image uploads")
@@ -181,7 +180,7 @@ func (h *ImageHandler) UploadImage(c echo.Context) error {
 					}
 				}
 			} else {
-				// No Authorization header — require onboarding token.
+				// Sem header Authorization — requer token de onboarding.
 				rawToken := c.QueryParam("token")
 				if rawToken == "" {
 					return apiError(c, http.StatusUnauthorized, "UNAUTHORIZED", "onboarding token or JWT is required for provider image uploads")
@@ -192,9 +191,9 @@ func (h *ImageHandler) UploadImage(c echo.Context) error {
 				}
 			}
 		} else {
-			// Manually validate JWT — this route has no middleware because
-			// document uploads are public. For all other types we extract
-			// and validate the Bearer token from the Authorization header.
+			// Valida JWT manualmente — esta rota não tem middleware porque
+			// uploads de documentos são públicos. Para todos os outros tipos
+			// extraímos e validamos o token Bearer do header Authorization.
 			header := c.Request().Header.Get("Authorization")
 			parts := strings.SplitN(header, " ", 2)
 			if len(parts) != 2 || !strings.EqualFold(parts[0], "bearer") {
@@ -215,8 +214,8 @@ func (h *ImageHandler) UploadImage(c echo.Context) error {
 		}
 	}
 
-	// Validate Origin header against allowed origins to prevent cross-origin
-	// upload abuse. Skip when the origin set is empty (configured as "*").
+	// Valida header Origin contra origens permitidas para evitar abuso de
+	// upload cross-origin. Pula quando o conjunto de origens está vazio (*).
 	if len(h.allowedOrigins) > 0 {
 		origin := c.Request().Header.Get("Origin")
 		if origin != "" && !h.allowedOrigins[origin] {
@@ -261,7 +260,7 @@ func (h *ImageHandler) UploadImage(c echo.Context) error {
 	})
 }
 
-// InvalidateCache handles POST /api/admin/cache/invalidate
+// InvalidateCache trata POST /api/admin/cache/invalidate
 // Body: {"imageIds": ["partner-1/logo", "defaults/pet-placeholder"]}
 func (h *ImageHandler) InvalidateCache(c echo.Context) error {
 	var body struct {
@@ -282,8 +281,8 @@ func (h *ImageHandler) InvalidateCache(c echo.Context) error {
 	})
 }
 
-// parseOriginSet splits a comma-separated CORS origins string into a set for
-// O(1) lookup. Entries are trimmed. Returns nil when the value is "*".
+// parseOriginSet divide uma string CSV de origens CORS em um set para
+// busca O(1). Entradas são trimadas. Retorna nil quando o valor é "*".
 func parseOriginSet(csv string) map[string]bool {
 	csv = strings.TrimSpace(csv)
 	if csv == "*" || csv == "" {

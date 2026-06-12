@@ -1,6 +1,6 @@
--- Add ON DELETE CASCADE to provider child tables so that deleting a
--- provider cascades cleanly without FK errors.
--- This supports the provider self-delete feature (DELETE /api/providers/me).
+-- Adiciona ON DELETE CASCADE às tabelas filhas de providers para que
+-- excluir um prestador cascadeie limpo sem erros de FK.
+-- Isso suporta a funcionalidade de autoexclusão de prestador (DELETE /api/providers/me).
 
 -- provider_verification_audit.provider_id → providers(id)
 ALTER TABLE provider_verification_audit DROP CONSTRAINT IF EXISTS provider_verification_audit_provider_id_fkey;

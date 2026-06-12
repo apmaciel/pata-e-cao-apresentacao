@@ -6,28 +6,28 @@ import (
 	"pata-cao/internal/repository/postgres"
 )
 
-// AdminStats is re-exported from the repository package.
+// AdminStats é reexportado do pacote repository.
 type AdminStats = postgres.AdminStats
 
-// ProviderGrowthResponse is re-exported from the repository package.
+// ProviderGrowthResponse é reexportado do pacote repository.
 type ProviderGrowthResponse = postgres.ProviderGrowthResponse
 
-// AdminService provides admin-only business logic beyond provider management.
+// AdminService fornece lógica de negócio exclusiva para admin além do gerenciamento de prestadores.
 type AdminService struct {
 	stats postgres.StatsRepository
 }
 
-// NewAdminService creates a new AdminService.
+// NewAdminService cria um novo AdminService.
 func NewAdminService(stats postgres.StatsRepository) *AdminService {
 	return &AdminService{stats: stats}
 }
 
-// GetStats returns aggregate dashboard statistics.
+// GetStats retorna estatísticas agregadas do dashboard.
 func (s *AdminService) GetStats(ctx context.Context) (*AdminStats, error) {
 	return s.stats.GetStats(ctx)
 }
 
-// GetProviderGrowth returns time-series provider growth data.
+// GetProviderGrowth retorna dados de série temporal de crescimento de prestadores.
 func (s *AdminService) GetProviderGrowth(ctx context.Context, rangeParam string) (*ProviderGrowthResponse, error) {
 	return s.stats.GetProviderGrowth(ctx, rangeParam)
 }

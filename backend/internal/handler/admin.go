@@ -16,20 +16,20 @@ import (
 	"pata-cao/internal/service"
 )
 
-// AdminHandler handles admin-only provider management endpoints.
+// AdminHandler trata endpoints de gerenciamento de prestadores restritos a admin.
 type AdminHandler struct {
 	providers *service.ProviderService
 	admin     *service.AdminService
 	validate  *validator.Validate
 }
 
-// NewAdminHandler creates a new AdminHandler.
+// NewAdminHandler cria um novo AdminHandler.
 func NewAdminHandler(providers *service.ProviderService, admin *service.AdminService) *AdminHandler {
 	return &AdminHandler{providers: providers, admin: admin, validate: validator.New()}
 }
 
-// ListAllProviders handles GET /api/admin/providers (admin only).
-// Query params: status (optional filter), search (name/email/id/services), page, per_page.
+// ListAllProviders trata GET /api/admin/providers (apenas admin).
+// Params de query: status (filtro opcional), search (nome/email/id/serviços), page, per_page.
 func (h *AdminHandler) ListAllProviders(c echo.Context) error {
 	status := c.QueryParam("status")
 	search := c.QueryParam("search")
@@ -43,7 +43,7 @@ func (h *AdminHandler) ListAllProviders(c echo.Context) error {
 	return c.JSON(http.StatusOK, result)
 }
 
-// GetPendingProviders handles GET /api/admin/providers/pending (admin only)
+// GetPendingProviders trata GET /api/admin/providers/pending (apenas admin)
 func (h *AdminHandler) GetPendingProviders(c echo.Context) error {
 	providers, err := h.providers.GetPendingProviders(c.Request().Context())
 	if err != nil {
@@ -55,7 +55,7 @@ func (h *AdminHandler) GetPendingProviders(c echo.Context) error {
 	return c.JSON(http.StatusOK, providers)
 }
 
-// ApproveProvider handles POST /api/admin/providers/:id/approve (admin only)
+// ApproveProvider trata POST /api/admin/providers/:id/approve (apenas admin)
 func (h *AdminHandler) ApproveProvider(c echo.Context) error {
 	providerID := c.Param("id")
 	adminID := mw.GetUserID(c)
@@ -78,7 +78,7 @@ func (h *AdminHandler) ApproveProvider(c echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{"message": "provider approved", "onboardingToken": rawToken})
 }
 
-// RejectProvider handles POST /api/admin/providers/:id/reject (admin only)
+// RejectProvider trata POST /api/admin/providers/:id/reject (apenas admin)
 func (h *AdminHandler) RejectProvider(c echo.Context) error {
 	providerID := c.Param("id")
 	adminID := mw.GetUserID(c)
@@ -100,7 +100,7 @@ func (h *AdminHandler) RejectProvider(c echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{"message": "provider rejected"})
 }
 
-// SuspendProvider handles POST /api/admin/providers/:id/suspend (admin only)
+// SuspendProvider trata POST /api/admin/providers/:id/suspend (apenas admin)
 func (h *AdminHandler) SuspendProvider(c echo.Context) error {
 	providerID := c.Param("id")
 	adminID := mw.GetUserID(c)
@@ -122,8 +122,8 @@ func (h *AdminHandler) SuspendProvider(c echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{"message": "provider suspended"})
 }
 
-// DeleteProvider handles DELETE /api/admin/providers/:id (admin only).
-// Only rejected providers may be permanently deleted.
+// DeleteProvider trata DELETE /api/admin/providers/:id (apenas admin).
+// Apenas prestadores rejeitados podem ser excluídos permanentemente.
 func (h *AdminHandler) DeleteProvider(c echo.Context) error {
 	providerID := c.Param("id")
 	if err := h.providers.DeleteProvider(c.Request().Context(), providerID); err != nil {
@@ -133,7 +133,7 @@ func (h *AdminHandler) DeleteProvider(c echo.Context) error {
 	return c.NoContent(http.StatusNoContent)
 }
 
-// GetAuditLog handles GET /api/admin/providers/:id/audit (admin only)
+// GetAuditLog trata GET /api/admin/providers/:id/audit (apenas admin)
 func (h *AdminHandler) GetAuditLog(c echo.Context) error {
 	providerID := c.Param("id")
 	entries, err := h.providers.GetAuditLog(c.Request().Context(), providerID)
@@ -143,7 +143,7 @@ func (h *AdminHandler) GetAuditLog(c echo.Context) error {
 	return c.JSON(http.StatusOK, entries)
 }
 
-// GetStats handles GET /api/admin/stats (admin only).
+// GetStats trata GET /api/admin/stats (apenas admin).
 func (h *AdminHandler) GetStats(c echo.Context) error {
 	stats, err := h.admin.GetStats(c.Request().Context())
 	if err != nil {
@@ -152,8 +152,8 @@ func (h *AdminHandler) GetStats(c echo.Context) error {
 	return c.JSON(http.StatusOK, stats)
 }
 
-// GetProviderGrowth handles GET /api/admin/stats/providers (admin only).
-// Query params: range (30d, 60d, 90d, ytd, all — defaults to 30d).
+// GetProviderGrowth trata GET /api/admin/stats/providers (apenas admin).
+// Params de query: range (30d, 60d, 90d, ytd, all — padrão 30d).
 func (h *AdminHandler) GetProviderGrowth(c echo.Context) error {
 	rangeParam := c.QueryParam("range")
 	if rangeParam == "" {
@@ -166,7 +166,7 @@ func (h *AdminHandler) GetProviderGrowth(c echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
-// UnsuspendProvider handles POST /api/admin/providers/:id/unsuspend (admin only)
+// UnsuspendProvider trata POST /api/admin/providers/:id/unsuspend (apenas admin)
 func (h *AdminHandler) UnsuspendProvider(c echo.Context) error {
 	providerID := c.Param("id")
 	adminID := mw.GetUserID(c)
@@ -188,7 +188,7 @@ func (h *AdminHandler) UnsuspendProvider(c echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{"message": "provider unsuspended"})
 }
 
-// RegenerateOnboardingToken handles POST /api/admin/providers/:id/regenerate-token (admin only).
+// RegenerateOnboardingToken trata POST /api/admin/providers/:id/regenerate-token (apenas admin).
 func (h *AdminHandler) RegenerateOnboardingToken(c echo.Context) error {
 	providerID := c.Param("id")
 
@@ -200,8 +200,8 @@ func (h *AdminHandler) RegenerateOnboardingToken(c echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{"onboardingToken": rawToken})
 }
 
-// ExportProvidersCSV streams a CSV file of all providers.
-// Optional ?status=approved,pending filter (comma-separated).
+// ExportProvidersCSV faz streaming de um arquivo CSV com todos os prestadores.
+// Filtro opcional ?status=approved,pending (separado por vírgulas).
 // GET /api/admin/providers/export
 func (h *AdminHandler) ExportProvidersCSV(c echo.Context) error {
 	statusFilter := c.QueryParam("status")

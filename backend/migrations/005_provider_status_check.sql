@@ -1,9 +1,9 @@
--- Enforce valid provider status values at the database level so no code
--- path can accidentally persist an invalid status.
+-- Impõe valores válidos de status de prestador no nível do banco para que
+-- nenhum caminho de código possa acidentalmente persistir um status inválido.
 --
--- suspended hides an approved provider from search and prevents new bookings
--- but preserves their data. The transition is reversible (unsuspend returns
--- the provider to approved).
+-- suspended esconde um prestador aprovado da busca e impede novas reservas
+-- mas preserva seus dados. A transição é reversível (unsuspend retorna o
+-- prestador para approved).
 
 ALTER TABLE providers
     ADD CONSTRAINT providers_status_check

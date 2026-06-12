@@ -7,9 +7,9 @@ import (
 	"unicode"
 )
 
-// GenerateSecureToken returns a 48-byte cryptographically random token
-// encoded as a URL-safe base64 string. Suitable for refresh tokens,
-// password-reset tokens, and onboarding invite tokens.
+// GenerateSecureToken retorna um token criptograficamente aleatório de 48 bytes
+// codificado como string base64 URL-safe. Adequado para refresh tokens,
+// tokens de redefinição de senha e tokens de convite de onboarding.
 func GenerateSecureToken() (string, error) {
 	b := make([]byte, 48)
 	if _, err := rand.Read(b); err != nil {
@@ -18,15 +18,15 @@ func GenerateSecureToken() (string, error) {
 	return base64.URLEncoding.EncodeToString(b), nil
 }
 
-// minPasswordLength is the floor enforced on signup and password reset.
-// Kept in lockstep with the frontend (see PasswordField.tsx).
+// minPasswordLength é o mínimo exigido no cadastro e redefinição de senha.
+// Mantido em sincronia com o frontend (veja PasswordField.tsx).
 const minPasswordLength = 10
 
-// validateStrongPassword enforces the rule described in SKILL.md and the
-// PasswordField component: at least minPasswordLength chars AND at least
-// three of the four classes (lowercase, uppercase, digit, symbol).
-// Returns a VALIDATION_ERROR-prefixed error so the existing parseServiceError
-// path maps it to a 422 response cleanly.
+// validateStrongPassword aplica a regra descrita no SKILL.md e no componente
+// PasswordField: pelo menos minPasswordLength caracteres E pelo menos três
+// das quatro classes (minúsculas, maiúsculas, dígito, símbolo).
+// Retorna erro prefixado com VALIDATION_ERROR para o parseServiceError
+// mapear para resposta 422 corretamente.
 func validateStrongPassword(pw string) error {
 	if len(pw) < minPasswordLength {
 		return fmt.Errorf("VALIDATION_ERROR: password must be at least %d characters", minPasswordLength)

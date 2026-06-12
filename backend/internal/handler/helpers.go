@@ -9,7 +9,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-// apiError writes the standard error JSON response.
+// apiError escreve a resposta JSON de erro padrão.
 func apiError(c echo.Context, status int, code, message string) error {
 	return c.JSON(status, map[string]string{
 		"error":   code,
@@ -17,7 +17,7 @@ func apiError(c echo.Context, status int, code, message string) error {
 	})
 }
 
-// validationError formats go-playground/validator errors into the standard shape.
+// validationError formata erros do go-playground/validator no formato padrão.
 func validationError(c echo.Context, err error) error {
 	var msgs []string
 	if ve, ok := err.(validator.ValidationErrors); ok {
@@ -32,8 +32,8 @@ func validationError(c echo.Context, err error) error {
 	})
 }
 
-// parseServiceError maps service-layer error strings to HTTP status codes.
-// Service errors are prefixed with an error code followed by a colon.
+// parseServiceError mapeia strings de erro da camada de serviço para códigos HTTP.
+// Erros de serviço são prefixados com um código de erro seguido de dois pontos.
 func parseServiceError(err error) (int, string, string) {
 	if err == nil {
 		return http.StatusInternalServerError, "INTERNAL_ERROR", "unexpected error"
@@ -76,9 +76,9 @@ func parseServiceError(err error) (int, string, string) {
 	}
 }
 
-// parseOptionalBool parses a query parameter as a boolean. Returns nil when
-// the parameter is absent or empty so callers can distinguish "no filter"
-// from an explicit "false".
+// parseOptionalBool analisa um parâmetro de query como booleano. Retorna nil quando
+// o parâmetro está ausente ou vazio para que os chamadores possam distinguir
+// "sem filtro" de um "false" explícito.
 func parseOptionalBool(s string) *bool {
 	if s == "" {
 		return nil

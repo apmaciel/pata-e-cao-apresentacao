@@ -11,7 +11,7 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-// StoredToken is a refresh token record.
+// StoredToken é um registro de refresh token.
 type StoredToken struct {
 	ID        string     `db:"id"`
 	UserID    string     `db:"user_id"`
@@ -21,7 +21,7 @@ type StoredToken struct {
 	RevokedAt *time.Time `db:"revoked_at"`
 }
 
-// TokenRepository manages refresh token persistence.
+// TokenRepository gerencia persistência de refresh tokens.
 type TokenRepository interface {
 	Save(ctx context.Context, userID string, rawToken string, expiresAt time.Time) error
 	GetByHash(ctx context.Context, rawToken string) (*StoredToken, error)
@@ -33,7 +33,7 @@ type tokenRepo struct {
 	db *sqlx.DB
 }
 
-// NewTokenRepository returns a TokenRepository backed by PostgreSQL.
+// NewTokenRepository retorna um TokenRepository com PostgreSQL.
 func NewTokenRepository(db *sqlx.DB) TokenRepository {
 	return &tokenRepo{db: db}
 }
@@ -75,7 +75,7 @@ func (r *tokenRepo) RevokeAllForUser(ctx context.Context, userID string) error {
 }
 
 // hashToken returns a hex-encoded SHA-256 hash of the raw token.
-// Tokens are hashed before storage so the DB never contains usable bearer values.
+// Tokens são hasheados antes do armazenamento para o BD nunca conter valores bearer utilizáveis.
 func hashToken(raw string) string {
 	sum := sha256.Sum256([]byte(raw))
 	return fmt.Sprintf("%x", sum)

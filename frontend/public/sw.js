@@ -1,16 +1,16 @@
 const CACHE_NAME = 'pata-cao-images-v2';
 
-// Default/static images are effectively immutable — cache them for a long time.
-const DEFAULT_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
-// User-uploaded images (logos, gallery) may change — shorter TTL.
-const USER_IMAGE_TTL_MS = 60 * 60 * 1000; // 1 hour
+// Imagens padrão/estáticas são efetivamente imutáveis — cache longo.
+const DEFAULT_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 dias
+// Imagens enviadas por usuários (logos, galeria) podem mudar — TTL menor.
+const USER_IMAGE_TTL_MS = 60 * 60 * 1000; // 1 hora
 
 const PRE_CACHE_URLS = [
   '/api/images/defaults/pet-placeholder',
   '/api/images/defaults/provider-placeholder',
 ];
 
-// ─── Install: pre-cache critical default images ───────────────────────────────
+// ─── Install: pré-cacheia imagens padrão críticas ──────────────────────────────
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches
@@ -20,7 +20,7 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// ─── Activate: clean up old caches ────────────────────────────────────────────
+// ─── Activate: limpa caches antigos ────────────────────────────────────────────
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches
@@ -36,7 +36,7 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// ─── Message: allow frontend to invalidate specific image caches ─────────────
+// ─── Message: permite o frontend invalidar caches de imagens específicas ──────
 self.addEventListener('message', (event) => {
   if (event.data?.type === 'INVALIDATE_IMAGE' && event.data?.imageId) {
     event.waitUntil(invalidateImage(event.data.imageId));
@@ -44,7 +44,7 @@ self.addEventListener('message', (event) => {
   if (event.data?.type === 'INVALIDATE_ALL_IMAGES') {
     event.waitUntil(
       caches.open(CACHE_NAME).then((cache) => cache.keys().then((keys) => {
-        // Keep defaults, remove everything else.
+        // Mantém padrões, remove todo o resto.
         return Promise.all(
           keys
             .filter((req) => !PRE_CACHE_URLS.some((p) => req.url.endsWith(p)))
@@ -62,12 +62,12 @@ async function invalidateImage(imageId) {
   return Promise.all(matches.map((req) => cache.delete(req)));
 }
 
-// ─── Fetch: stale-while-revalidate with TTL for /api/images/* ────────────────
+// ─── Fetch: stale-while-revalidate com TTL para /api/images/* ─────────────────
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
   if (!url.pathname.startsWith('/api/images/')) {
-    return; // only intercept image API requests
+    return; // intercepta apenas requisições de API de imagem
   }
 
   event.respondWith(staleWhileRevalidate(event.request));
@@ -84,7 +84,7 @@ async function staleWhileRevalidate(request) {
   const requestUrl = new URL(request.url);
   const ttl = isDefaultImage(requestUrl.pathname) ? DEFAULT_TTL_MS : USER_IMAGE_TTL_MS;
 
-  // Determine cache age from the Date header we stored alongside the response.
+  // Determina idade do cache pelo header Date que armazenamos junto com a resposta.
   let cacheAge = Infinity;
   if (cached) {
     const cachedDate = cached.headers.get('sw-cached-at');
@@ -93,11 +93,11 @@ async function staleWhileRevalidate(request) {
     }
   }
 
-  // Kick off network request regardless.
+  // Dispara requisição de rede de qualquer forma.
   const networkFetch = fetch(request)
     .then((networkResponse) => {
       if (networkResponse.ok) {
-        // Clone and stamp with a cache timestamp before storing.
+        // Clona e carimba com timestamp de cache antes de armazenar.
         const stamped = new Response(networkResponse.body, networkResponse);
         stamped.headers.set('sw-cached-at', String(Date.now()));
         cache.put(request, stamped);
@@ -106,23 +106,23 @@ async function staleWhileRevalidate(request) {
     })
     .catch(() => null);
 
-  // If we have a fresh-enough cached response, serve it immediately.
+  // Se temos resposta em cache suficientemente recente, serve imediatamente.
   if (cached && cacheAge <= ttl) {
     return cached;
   }
 
-  // Cache is stale or missing — wait for network.
+  // Cache expirado ou ausente — espera pela rede.
   const networkResponse = await networkFetch;
   if (networkResponse) {
     return networkResponse;
   }
 
-  // Network failed, serve stale cache as last resort.
+  // Rede falhou, serve cache expirado como último recurso.
   if (cached) {
     return cached;
   }
 
-  // Both failed — return a minimal fallback.
+  // Ambos falharam — retorna fallback mínimo.
   return new Response(JSON.stringify({ error: 'offline' }), {
     status: 503,
     headers: { 'Content-Type': 'application/json' },

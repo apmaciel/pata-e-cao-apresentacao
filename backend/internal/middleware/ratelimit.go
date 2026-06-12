@@ -13,7 +13,7 @@ type windowEntry struct {
 	windowEnd time.Time
 }
 
-// RateLimiter holds per-IP sliding-window counters.
+// RateLimiter mantém contadores de janela deslizante por IP.
 type RateLimiter struct {
 	mu       sync.Mutex
 	entries  map[string]*windowEntry
@@ -21,19 +21,19 @@ type RateLimiter struct {
 	window   time.Duration
 }
 
-// NewRateLimiter creates a limiter that allows maxReqs requests per window duration.
+// NewRateLimiter cria um limitador que permite maxReqs requisições por janela.
 func NewRateLimiter(maxReqs int, window time.Duration) *RateLimiter {
 	rl := &RateLimiter{
 		entries: make(map[string]*windowEntry),
 		maxReqs: maxReqs,
 		window:  window,
 	}
-	// Background cleanup to avoid unbounded memory growth.
+	// Limpeza em background para evitar crescimento ilimitado de memória.
 	go rl.cleanup()
 	return rl
 }
 
-// Middleware returns an Echo middleware that enforces the rate limit per remote IP.
+// Middleware retorna um middleware Echo que aplica o rate limit por IP remoto.
 func (rl *RateLimiter) Middleware() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
@@ -66,7 +66,7 @@ func (rl *RateLimiter) allow(ip string) bool {
 	return true
 }
 
-// cleanup runs every minute and removes expired entries.
+// cleanup executa a cada minuto e remove entradas expiradas.
 func (rl *RateLimiter) cleanup() {
 	ticker := time.NewTicker(time.Minute)
 	defer ticker.Stop()

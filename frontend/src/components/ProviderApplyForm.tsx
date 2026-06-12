@@ -30,11 +30,11 @@ interface FormState {
   documentImageId: string;
   documentFile: File | null;
   socialLink: string;
-  // PF-only
+  // Apenas PF
   fullName: string;
   birthDate: string;
   cpf: string;
-  // PJ-only
+  // Apenas PJ
   legalRepresentative: string;
   businessName: string;
   taxId: string;
@@ -95,9 +95,9 @@ export default function ProviderApplyForm() {
         { value: 'contrato_social', label: t('providerApply.docTypes.contratoSocial') },
       ];
 
-  // Service list filtered to the three categories offered during provider
-  // application. Keep values aligned with SERVICE_CATALOG tokens so the
-  // search filter and provider records stay consistent.
+  // Lista de serviços filtrada para as três categorias oferecidas durante a
+  // aplicação de prestador. Mantenha valores alinhados com SERVICE_CATALOG para
+  // o filtro de busca e registros de prestadores permanecerem consistentes.
   const serviceOptions = SERVICE_CATALOG.filter(({ value }) =>
     ['boarding', 'walking', 'training'].includes(value),
   ).map(({ value, labelKey }) => ({

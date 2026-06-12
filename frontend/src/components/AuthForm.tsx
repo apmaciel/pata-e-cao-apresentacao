@@ -70,7 +70,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
-    // Clear field error on change
+    // Limpa erro do campo ao alterar
     if (errors[name as keyof ValidationErrors]) {
       setErrors((prev) => ({ ...prev, [name]: undefined }));
     }
@@ -91,7 +91,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
       if (isSignUp) {
         await auth.signup(form.email, form.password, form.fullName);
         setSuccess(true);
-        // Redirect after brief pause
+        // Redireciona após breve pausa
         setTimeout(() => {
           window.location.href = '/auth/signin?registered=1';
         }, 1500);

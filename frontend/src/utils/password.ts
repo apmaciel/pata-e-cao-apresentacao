@@ -37,7 +37,7 @@ export function evaluatePassword(pw: string): PasswordStrength {
 
 // generateStrongPassword returns a 14-char password that always satisfies
 // the policy: one of each class, the rest random across all classes.
-// Uses crypto.getRandomValues for unbiased sampling.
+// Usa crypto.getRandomValues para amostragem não enviesada.
 export function generateStrongPassword(length = 14): string {
   const lower = 'abcdefghijklmnopqrstuvwxyz';
   const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';

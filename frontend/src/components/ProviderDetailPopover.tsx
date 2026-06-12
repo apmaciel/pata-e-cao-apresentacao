@@ -5,9 +5,9 @@ import { admin, downloadDocument, type AdminAuditEntry, type ProviderListItem } 
 import { statusClass, serviceLabel } from '../utils/adminHelpers';
 import '../i18n.config';
 
-// DocumentLink downloads a provider identity document via the authenticated API,
-// creates a blob URL, and opens it in a new tab. Plain <a> tags can't send the
-// Authorization header, so we route through fetch with the in-memory token.
+// DocumentLink baixa um documento de identidade do prestador via API autenticada,
+// cria uma URL blob e a abre em nova aba. Tags <a> comuns não podem enviar o
+// header Authorization, então roteamos via fetch com o token em memória.
 function DocumentLink({ imageId, label }: { imageId: string; label: string }) {
   const [loading, setLoading] = useState(false);
 

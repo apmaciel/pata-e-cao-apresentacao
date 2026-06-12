@@ -1,4 +1,4 @@
--- One-time onboarding tokens. Pattern follows password_resets.
+-- Tokens de onboarding de uso único. Segue o padrão de password_resets.
 CREATE TABLE provider_onboarding_tokens (
     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     provider_id UUID NOT NULL REFERENCES providers(id) ON DELETE CASCADE,
@@ -9,17 +9,17 @@ CREATE TABLE provider_onboarding_tokens (
 );
 CREATE INDEX idx_onboarding_tokens_provider ON provider_onboarding_tokens(provider_id);
 
--- Service preference flags.
+-- Flags de preferência de serviço.
 ALTER TABLE providers ADD COLUMN accepts_dogs     BOOLEAN NOT NULL DEFAULT FALSE;
 ALTER TABLE providers ADD COLUMN accepts_cats     BOOLEAN NOT NULL DEFAULT FALSE;
 ALTER TABLE providers ADD COLUMN accepts_neutered BOOLEAN NOT NULL DEFAULT FALSE;
 ALTER TABLE providers ADD COLUMN accepts_intact   BOOLEAN NOT NULL DEFAULT FALSE;
 
--- Contact and onboarding marker.
+-- Contato e marcador de onboarding.
 ALTER TABLE providers ADD COLUMN whatsapp               VARCHAR(20);
 ALTER TABLE providers ADD COLUMN onboarding_completed_at TIMESTAMPTZ;
 
--- Provider gallery (separate table for referential integrity, like pet_images).
+-- Galeria do prestador (tabela separada para integridade referencial, como pet_images).
 CREATE TABLE provider_gallery_images (
     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     provider_id UUID NOT NULL REFERENCES providers(id) ON DELETE CASCADE,

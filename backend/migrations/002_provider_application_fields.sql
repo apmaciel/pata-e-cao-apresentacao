@@ -1,10 +1,10 @@
--- Provider application fields collected via the public "Seja um Parceiro Pet"
--- registration form (frontend/src/pages/providers/apply.astro).
+-- Campos de aplicação de prestador coletados via formulário público
+-- "Seja um Parceiro Pet" (frontend/src/pages/providers/apply.astro).
 --
--- account_type distinguishes individuals (PF) from legal entities (PJ) and
--- governs which document types are valid on the application.
--- document_file_name is a stub for the actual upload — the file storage
--- pipeline lands in a follow-up.
+-- account_type distingue pessoas físicas (PF) de jurídicas (PJ) e
+-- determina quais tipos de documento são válidos na aplicação.
+-- document_file_name é um stub para o upload real — o pipeline de
+-- armazenamento de arquivos é implementado em seguida.
 
 ALTER TABLE providers
     ADD COLUMN account_type        VARCHAR(20)  NOT NULL DEFAULT 'pessoa_fisica',

@@ -44,7 +44,7 @@ export interface ProviderListItem {
   isVerified?: boolean;
   status?: string;
   accountType?: string;
-  // Application fields (returned by admin endpoints).
+	// Campos de aplicação (retornados pelos endpoints admin).
   birthDate?: string;
   documentType?: string;
   documentFileName?: string;
@@ -56,7 +56,7 @@ export interface ProviderListItem {
   phone?: string;
   createdAt?: string;
   companyName?: string;
-  // Onboarding / service-preference fields.
+	// Campos de onboarding / preferências de serviço.
   bio?: string;
   acceptsDogs?: boolean;
   acceptsCats?: boolean;
@@ -88,14 +88,14 @@ export interface ProviderApplicationData {
   website?: string;
 }
 
-// Mirror of backend RegisterProviderRequest. accountType is the PF/PJ toggle.
+// Espelha RegisterProviderRequest do backend. accountType é o toggle PF/PJ.
 //
-// PF requires: birthDate. fullName = personal name.
-// PJ requires: businessName (Razão Social) + taxId (CNPJ).
-//   fullName on PJ = legal representative.
+// PF requer: birthDate. fullName = nome pessoal.
+// PJ requer: businessName (Razão Social) + taxId (CNPJ).
+//   fullName no PJ = representante legal.
 //
-// documentFileName / socialLink are optional; documentImageId comes from
-// uploadImage(file, 'document') called before registration.
+// documentFileName / socialLink são opcionais; documentImageId vem de
+// uploadImage(file, 'document') chamado antes do registro.
 export interface ProviderRegisterData {
   email: string;
   password: string;
@@ -120,11 +120,11 @@ export interface Review {
   createdAt: string;
 }
 
-// ─── Authenticated document download ───────────────────────────────────────────
+// ─── Download autenticado de documentos ────────────────────────────────────────
 
-// downloadDocument fetches an image/document from the API with the auth token,
-// creates a blob URL, and returns it. Use this for admin-only resources like
-// provider identity documents that require authentication to access.
+// downloadDocument busca uma imagem/documento da API com token de autenticação,
+// cria uma URL blob e a retorna. Use para recursos restritos a admin como
+// documentos de identidade de prestadores que requerem autenticação.
 export async function downloadDocument(imageId: string): Promise<string> {
   const headers: Record<string, string> = {};
   if (_accessToken) {
@@ -149,7 +149,7 @@ export async function downloadDocument(imageId: string): Promise<string> {
   return URL.createObjectURL(blob);
 }
 
-// ─── Token management (in-memory, refresh in httpOnly cookie) ─────────────────
+// ─── Gerenciamento de token (em memória, refresh em cookie httpOnly) ───────────
 
 let _accessToken: string | null = null;
 
@@ -165,7 +165,7 @@ export function clearToken(): void {
   _accessToken = null;
 }
 
-// ─── Image upload (multipart, bypasses JSON apiFetch) ─────────────────────────
+// ─── Upload de imagem (multipart, ignora JSON apiFetch) ────────────────────────
 
 export async function uploadImage(file: File, type: string = 'pet', token?: string): Promise<{ imageId: string; url: string }> {
   const formData = new FormData();
@@ -199,16 +199,16 @@ export async function uploadImage(file: File, type: string = 'pet', token?: stri
 
   const result = await response.json();
 
-  // Purge any stale SW cache entry for this image ID so the next
-  // request goes straight to the backend (which has the new file).
+// Purga qualquer entrada de cache SW obsoleta para este ID de imagem
+	// para que a próxima requisição vá direto ao backend (que tem o novo arquivo).
   invalidateSWImageCache(result.imageId);
 
   return result;
 }
 
-// ─── Service Worker cache helpers ─────────────────────────────────────────────
+// ─── Helpers de cache do Service Worker ────────────────────────────────────────
 
-/** Tell the SW to purge cached entries for a specific image ID. */
+/** Diz ao SW para purgar entradas em cache para um ID de imagem específico. */
 export function invalidateSWImageCache(imageId: string) {
   if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
     navigator.serviceWorker.controller.postMessage({
@@ -218,7 +218,7 @@ export function invalidateSWImageCache(imageId: string) {
   }
 }
 
-/** Tell the SW to purge all non-default cached images (e.g. after mass update). */
+/** Diz ao SW para purgar todas as imagens não-padrão em cache (ex.: após atualização em massa). */
 export function invalidateSWAllImageCache() {
   if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
     navigator.serviceWorker.controller.postMessage({
@@ -227,7 +227,7 @@ export function invalidateSWAllImageCache() {
   }
 }
 
-// ─── Core fetch wrapper ───────────────────────────────────────────────────────
+// ─── Wrapper principal de fetch ────────────────────────────────────────────────
 
 let _refreshPromise: Promise<AuthResponse | null> | null = null;
 
@@ -268,8 +268,8 @@ async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> 
     headers['Authorization'] = `Bearer ${_accessToken}`;
   }
 
-  // Use no-cache for GET requests so the browser always revalidates with
-  // the server before serving cached JSON (avoids stale provider lists).
+	// Usa no-cache para requisições GET para o navegador sempre revalidar com
+	// o servidor antes de servir JSON em cache (evita listas de prestadores desatualizadas).
   const fetchOpts: RequestInit = {
     ...options,
     headers,
@@ -281,8 +281,8 @@ async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> 
 
   let response = await fetch(`${API_URL}${path}`, fetchOpts);
 
-  // On 401, attempt a token refresh and retry once. Skip for refresh itself
-  // and for auth endpoints to avoid infinite loops.
+	// Em 401, tenta refresh do token e repete uma vez. Pula para o próprio
+	// refresh e endpoints auth para evitar loops infinitos.
   if (response.status === 401 && !path.startsWith('/api/auth')) {
     const refreshed = await refreshToken();
     if (refreshed) {
@@ -296,17 +296,17 @@ async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> 
   }
 
   if (!response.ok) {
-    // Attempt to parse error body
+    // Tenta parsear corpo de erro
     let apiErr: ApiError = { error: 'unknown_error', message: `HTTP ${response.status}` };
     try {
       apiErr = await response.json();
     } catch {
-      // ignore parse failure
+      // ignora falha de parse
     }
     throw new Error(apiErr.message || apiErr.error);
   }
 
-  // 204 No Content
+  // 204 Sem Conteúdo
   if (response.status === 204) {
     return undefined as unknown as T;
   }
@@ -316,9 +316,9 @@ async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> 
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 
-// Session cache for the logged-in user. The refresh token lives in an
-// httpOnly cookie owned by the backend; this is just the in-memory mirror
-// the UI uses to render logged-in state without re-fetching on every render.
+// Cache de sessão para o usuário logado. O refresh token vive em um cookie
+// httpOnly mantido pelo backend; este é apenas o espelho em memória que o
+// UI usa para renderizar estado de login sem refazer fetch a cada renderização.
 let _currentUser: UserProfile | null = null;
 
 export function getCurrentUser(): UserProfile | null {
@@ -328,8 +328,8 @@ export function getCurrentUser(): UserProfile | null {
 let _authInitDone = false;
 let _authInitPromise: Promise<UserProfile | null> | null = null;
 
-// authReady resolves once the initial session check completes (success or
-// failure). Components that need a token should await this before firing.
+// authReady resolve quando a verificação inicial de sessão completa (sucesso ou
+// falha). Componentes que precisam de token devem aguardar isso antes de disparar.
 export function authReady(): Promise<UserProfile | null> {
   if (_currentUser) return Promise.resolve(_currentUser);
   if (_authInitDone) return Promise.resolve(null);

@@ -25,16 +25,15 @@ func main() {
 		log.Fatalf("config error: %v", err)
 	}
 
-	// ── Database ──────────────────────────────────────────────────────────────
+	// ── Banco de Dados ──────────────────────────────────────────────────────────
 	db, err := postgres.Connect(cfg.DatabaseURL)
 	if err != nil {
-		log.Fatalf("database connection failed: %v", err)
+		log.Fatalf("falha na conexão com banco de dados: %v", err)
 	}
 	defer db.Close()
 
-	// Resolve migrations directory. MIGRATIONS_DIR env var takes precedence
-	// (required in Docker where source paths don't exist). Falls back to
-	// a path relative to the running binary for local dev.
+	// Resolve o diretório de migrations. MIGRATIONS_DIR tem precedência
+	// (obrigatório no Docker). Fallback para caminho relativo ao binário.
 	migrationsDir := os.Getenv("MIGRATIONS_DIR")
 	if migrationsDir == "" {
 		exe, err := os.Executable()
@@ -45,10 +44,10 @@ func main() {
 	}
 
 	if err := postgres.RunMigrations(db, migrationsDir); err != nil {
-		log.Fatalf("migrations failed: %v", err)
+		log.Fatalf("migrations falharam: %v", err)
 	}
 
-	// ── Repositories ─────────────────────────────────────────────────────────
+	// ── Repositórios ─────────────────────────────────────────────────────────
 	userRepo := postgres.NewUserRepository(db)
 	providerRepo := postgres.NewProviderRepository(db)
 	onboardingTokenRepo := postgres.NewOnboardingTokenRepository(db)
@@ -56,23 +55,23 @@ func main() {
 	tokenRepo := postgres.NewTokenRepository(db)
 	passwordResetRepo := postgres.NewPasswordResetRepository(db)
 
-	// ── Search (optional) ────────────────────────────────────────────────────
-	// When TYPESENSE_URL is empty the service runs without Typesense and the
-	// /providers list endpoint serves results from PostgreSQL directly.
+	// ── Busca (opcional) ────────────────────────────────────────────────────
+	// Quando TYPESENSE_URL está vazio, o serviço roda sem Typesense e o
+	// endpoint /providers serve resultados diretamente do PostgreSQL.
 	var searchSvc service.SearchService
 	if cfg.TypesenseURL != "" {
 		bootCtx, cancelBoot := context.WithTimeout(context.Background(), 10*time.Second)
 		ts, err := service.NewTypesenseSearch(bootCtx, cfg.TypesenseURL, cfg.TypesenseAPIKey)
 		cancelBoot()
 		if err != nil {
-			log.Printf("typesense init failed (%v); falling back to PostgreSQL search", err)
+			log.Printf("inicialização do typesense falhou (%v); usando fallback para PostgreSQL", err)
 		} else {
 			searchSvc = ts
-			log.Printf("typesense initialized at %s", cfg.TypesenseURL)
+			log.Printf("typesense inicializado em %s", cfg.TypesenseURL)
 		}
 	}
 
-	// ── Services ─────────────────────────────────────────────────────────────
+	// ── Serviços ─────────────────────────────────────────────────────────────
 	authSvc := service.NewAuthService(
 		db, userRepo, tokenRepo, passwordResetRepo, providerRepo, onboardingTokenRepo,
 		cfg.JWTSecret, cfg.JWTAccessExpiry, cfg.JWTRefreshExpiry, cfg.PasswordResetTTL,
@@ -86,8 +85,8 @@ func main() {
 	}
 	adminSvc := service.NewAdminService(postgres.NewStatsRepository(db))
 
-	// Reindex Typesense on every startup so the search index stays in sync
-	// with the Postgres source of truth.
+	// Reindexa o Typesense a cada inicialização para manter o índice de busca
+	// sincronizado com a fonte de verdade no PostgreSQL.
 	if searchSvc != nil {
 		reindexCtx, cancelReindex := context.WithTimeout(context.Background(), 30*time.Second)
 		n, reindexErr := providerSvc.ReindexAll(reindexCtx)
@@ -108,7 +107,7 @@ func main() {
 	searchH := handler.NewSearchHandler(providerSvc)
 	onboardingH := handler.NewOnboardingHandler(providerSvc)
 
-	// ── Echo setup ───────────────────────────────────────────────────────────
+	// ── Configuração do Echo ───────────────────────────────────────────────────
 	e := echo.New()
 	e.HideBanner = true
 
@@ -124,7 +123,7 @@ func main() {
 	}))
 	e.Use(rateLimiter.Middleware())
 
-	// Health check (no auth).
+	// Health check (sem autenticação).
 	e.GET("/health", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, map[string]string{
 			"status":    "ok",
@@ -132,7 +131,7 @@ func main() {
 		})
 	})
 
-	// ── Routes ───────────────────────────────────────────────────────────────
+	// ── Rotas ───────────────────────────────────────────────────────────────
 	api := e.Group("/api")
 	jwtMw := mw.JWTAuth(cfg.JWTSecret)
 
@@ -147,34 +146,34 @@ func main() {
 
 	// Providers
 	providers := api.Group("/providers")
-	providers.GET("", providerH.ListProviders)                                    // public
-	providers.GET("/me", providerH.GetMyProvider, jwtMw)                          // auth required — own profile
-	providers.PUT("/me", providerH.UpdateMyProvider, jwtMw)                       // auth required — edit own profile
-	providers.DELETE("/me", providerH.DeleteMyProvider, jwtMw)                    // auth required — delete own account (password confirmation)
-	providers.POST("/me/gallery", providerH.AddGalleryImage, jwtMw)               // auth required — add gallery image
-	providers.DELETE("/me/gallery/:imageId", providerH.RemoveGalleryImage, jwtMw) // auth required
-	providers.GET("/:id", providerH.GetProvider)                                  // public (approved only)
-	providers.POST("/register", authH.RegisterProvider)                           // public — combined signup + apply
-	providers.POST("/apply", providerH.Apply, jwtMw)                              // auth required
-	providers.GET("/:id/reviews", providerH.GetProviderReviews)                   // public
-	providers.POST("/onboarding/validate", onboardingH.ValidateToken)             // public — token is the auth
-	providers.POST("/onboarding/complete", onboardingH.Complete)                  // public — token is the auth
+	providers.GET("", providerH.ListProviders)                                    // público
+	providers.GET("/me", providerH.GetMyProvider, jwtMw)                          // requer autenticação — perfil próprio
+	providers.PUT("/me", providerH.UpdateMyProvider, jwtMw)                       // requer autenticação — editar perfil próprio
+	providers.DELETE("/me", providerH.DeleteMyProvider, jwtMw)                    // requer autenticação — excluir conta (confirmação de senha)
+	providers.POST("/me/gallery", providerH.AddGalleryImage, jwtMw)               // requer autenticação — adicionar imagem à galeria
+	providers.DELETE("/me/gallery/:imageId", providerH.RemoveGalleryImage, jwtMw) // requer autenticação
+	providers.GET("/:id", providerH.GetProvider)                                  // público (apenas aprovados)
+	providers.POST("/register", authH.RegisterProvider)                           // público — cadastro + aplicação combinados
+	providers.POST("/apply", providerH.Apply, jwtMw)                              // requer autenticação
+	providers.GET("/:id/reviews", providerH.GetProviderReviews)                   // público
+	providers.POST("/onboarding/validate", onboardingH.ValidateToken)             // público — o token é a autenticação
+	providers.POST("/onboarding/complete", onboardingH.Complete)                  // público — o token é a autenticação
 
-	// Reviews (auth required)
+	// Reviews (requer autenticação)
 	api.POST("/reviews", reviewH.CreateReview, jwtMw)
 
-	// Images
-	// Wildcard captures slash-containing IDs like "partner-1/logo" and
-	// "defaults/pet-placeholder". The handler itself routes /metadata suffix.
+	// Imagens
+	// Wildcard captura IDs com barras como "partner-1/logo" e
+	// "defaults/pet-placeholder". O handler roteia sufixo /metadata.
 	api.GET("/images/*", imageH.Handle)
 	api.POST("/images/upload", imageH.UploadImage)
 
-	// Admin (auth + admin role)
+	// Admin (requer autenticação + papel admin)
 	adminGroup := api.Group("/admin", jwtMw, mw.RequireAdmin())
 	adminGroup.GET("/stats", adminH.GetStats)
 	adminGroup.GET("/stats/providers", adminH.GetProviderGrowth)
-	adminGroup.GET("/providers", adminH.ListAllProviders)          // paginated, optional ?status=
-	adminGroup.GET("/providers/export", adminH.ExportProvidersCSV) // CSV download, optional ?status=
+	adminGroup.GET("/providers", adminH.ListAllProviders)          // paginado, ?status= opcional
+	adminGroup.GET("/providers/export", adminH.ExportProvidersCSV) // download CSV, ?status= opcional
 	adminGroup.GET("/providers/pending", adminH.GetPendingProviders)
 	adminGroup.GET("/providers/:id/audit", adminH.GetAuditLog)
 	adminGroup.POST("/providers/:id/approve", adminH.ApproveProvider)
@@ -186,10 +185,10 @@ func main() {
 	adminGroup.POST("/cache/invalidate", imageH.InvalidateCache)
 	adminGroup.POST("/search/reindex", searchH.Reindex)
 
-	// Search autocomplete (public)
+	// Autocomplete de busca (público)
 	api.GET("/search/autocomplete", searchH.Autocomplete)
 
-	// ── Graceful shutdown ────────────────────────────────────────────────────
+	// ── Desligamento gracioso ────────────────────────────────────────────────
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt)
 

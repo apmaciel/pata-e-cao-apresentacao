@@ -8,15 +8,15 @@ import (
 	"pata-cao/internal/repository/postgres"
 )
 
-// ReviewService handles review business logic.
+// ReviewService trata lógica de negócio de avaliações.
 type ReviewService struct {
 	reviews   postgres.ReviewRepository
 	providers postgres.ProviderRepository
-	search    SearchService // nil disables provider re-indexing after rating updates
+	search    SearchService // nil desabilita reindexação do provider após atualizações de nota
 }
 
-// NewReviewService creates a new ReviewService. Pass nil for search to skip
-// Typesense rating sync (the Postgres rating still updates either way).
+// NewReviewService cria um novo ReviewService. Passe nil para search para pular
+// a sincronização de nota no Typesense (a nota no Postgres ainda atualiza de qualquer forma).
 func NewReviewService(
 	reviews postgres.ReviewRepository,
 	providers postgres.ProviderRepository,
@@ -25,7 +25,7 @@ func NewReviewService(
 	return &ReviewService{reviews: reviews, providers: providers, search: search}
 }
 
-// CreateReview creates a review after verifying all preconditions.
+// CreateReview cria uma avaliação após verificar todas as pré-condições.
 func (s *ReviewService) CreateReview(ctx context.Context, reviewerID string, r *models.Review) error {
 	if r.Rating < 1 || r.Rating > 5 {
 		return fmt.Errorf("VALIDATION_ERROR: rating must be between 1 and 5")
@@ -40,20 +40,20 @@ func (s *ReviewService) CreateReview(ctx context.Context, reviewerID string, r *
 		return fmt.Errorf("INTERNAL_ERROR: failed to create review")
 	}
 
-	// Recalculate provider rating.
+	// Recalcula a nota do prestador.
 	go s.recalculateRating(context.Background(), r.ProviderID)
 
 	return nil
 }
 
-// GetProviderReviews returns approved reviews for a provider (public).
+// GetProviderReviews retorna avaliações aprovadas de um prestador (público).
 func (s *ReviewService) GetProviderReviews(ctx context.Context, providerID string) ([]models.Review, error) {
 	return s.reviews.ListByProvider(ctx, providerID, "approved")
 }
 
-// recalculateRating recalculates and persists the provider's average rating,
-// then best-effort re-indexes the provider in Typesense so search results
-// reflect the new avg_rating / review_count.
+// recalculateRating recalcula e persiste a nota média do prestador,
+// depois reindexa no Typesense no melhor esforço para que resultados de busca
+// reflitam o novo avg_rating / review_count.
 func (s *ReviewService) recalculateRating(ctx context.Context, providerID string) {
 	reviews, err := s.reviews.ListByProvider(ctx, providerID, "approved")
 	if err != nil || len(reviews) == 0 {

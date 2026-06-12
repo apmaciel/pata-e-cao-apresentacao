@@ -12,24 +12,24 @@ import (
 	"pata-cao/internal/repository/postgres"
 )
 
-// ProviderService handles provider business logic.
+// ProviderService trata lógica de negócio de prestadores.
 type ProviderService struct {
 	providers        postgres.ProviderRepository
-	search           SearchService // nil disables search (Postgres fallback only)
+	search           SearchService // nil desabilita busca (apenas fallback Postgres)
 	onboardingTokens postgres.OnboardingTokenRepository
 	users            postgres.UserRepository
 }
 
-// NewProviderService creates a new ProviderService. Pass nil for search to
-// run without Typesense — listings then use the SQL fallback path.
+// NewProviderService cria um novo ProviderService. Passe nil para search para
+// rodar sem Typesense — as listagens usarão o caminho de fallback SQL.
 func NewProviderService(providers postgres.ProviderRepository, search SearchService, onboardingTokens postgres.OnboardingTokenRepository, users postgres.UserRepository) *ProviderService {
 	return &ProviderService{providers: providers, search: search, onboardingTokens: onboardingTokens, users: users}
 }
 
-// Apply creates a pending provider profile for the authenticated user.
-// A user may only have one provider profile.
+// Apply cria um perfil de prestador pendente para o usuário autenticado.
+// Um usuário pode ter apenas um perfil de prestador.
 func (s *ProviderService) Apply(ctx context.Context, userID string, p *models.Provider) error {
-	// Check for existing profile.
+	// Verifica perfil existente.
 	existing, err := s.providers.GetByUserID(ctx, userID)
 	if err == nil && existing != nil {
 		return fmt.Errorf("ALREADY_EXISTS: you already have a provider profile")
@@ -40,15 +40,15 @@ func (s *ProviderService) Apply(ctx context.Context, userID string, p *models.Pr
 	return s.providers.Create(ctx, p)
 }
 
-// GetProvider returns a provider by ID.
-// Non-admin and non-self callers only see approved providers.
+// GetProvider retorna um prestador por ID.
+// Chamadores não-admin e não-self só veem prestadores aprovados.
 func (s *ProviderService) GetProvider(ctx context.Context, id, callerID, callerRole string) (*models.Provider, error) {
 	provider, err := s.providers.GetByID(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("PROVIDER_NOT_FOUND: provider does not exist")
 	}
 
-	// Admins and the provider themselves can see any status.
+	// Admins e o próprio prestador podem ver qualquer status.
 	if callerRole == "admin" || provider.UserID == callerID {
 		return s.enrichWithUser(ctx, s.attachGallery(ctx, provider)), nil
 	}
@@ -59,7 +59,7 @@ func (s *ProviderService) GetProvider(ctx context.Context, id, callerID, callerR
 	return s.enrichWithUser(ctx, s.attachGallery(ctx, provider)), nil
 }
 
-// enrichWithUser fetches the user's email and phone and attaches them to the provider.
+// enrichWithUser busca o email e telefone do usuário e os anexa ao prestador.
 func (s *ProviderService) enrichWithUser(ctx context.Context, p *models.Provider) *models.Provider {
 	u, err := s.users.GetByID(ctx, p.UserID)
 	if err != nil {
@@ -71,7 +71,7 @@ func (s *ProviderService) enrichWithUser(ctx context.Context, p *models.Provider
 	return p
 }
 
-// attachGallery loads and attaches gallery images to a provider.
+// attachGallery carrega e anexa imagens da galeria a um prestador.
 func (s *ProviderService) attachGallery(ctx context.Context, p *models.Provider) *models.Provider {
 	images, err := s.providers.ListGalleryImages(ctx, p.ID)
 	if err != nil {
@@ -87,9 +87,9 @@ func (s *ProviderService) attachGallery(ctx context.Context, p *models.Provider)
 	return p
 }
 
-// ListProviders returns the paginated, faceted set of approved providers
-// matching params. Delegates to Typesense when configured and falls back to
-// PostgreSQL when the search service is nil or returns an error.
+// ListProviders retorna o conjunto paginado e facetado de prestadores aprovados
+// que correspondem aos parâmetros. Delega ao Typesense quando configurado e
+// faz fallback para PostgreSQL quando o serviço de busca é nil ou retorna erro.
 func (s *ProviderService) ListProviders(ctx context.Context, params SearchParams) (*SearchResult, error) {
 	if s.search != nil {
 		res, err := s.search.SearchProviders(ctx, params)
@@ -101,8 +101,8 @@ func (s *ProviderService) ListProviders(ctx context.Context, params SearchParams
 	return s.listFromPostgres(ctx, params)
 }
 
-// AutocompleteProviders returns lightweight suggestions for search-as-you-type.
-// Delegates to Typesense when configured; falls back to a PostgreSQL ILIKE query.
+// AutocompleteProviders retorna sugestões leves para busca enquanto digita.
+// Delega ao Typesense quando configurado; fallback para query ILIKE no PostgreSQL.
 func (s *ProviderService) AutocompleteProviders(ctx context.Context, query string) ([]models.AutocompleteSuggestion, error) {
 	if query == "" {
 		return []models.AutocompleteSuggestion{}, nil
@@ -172,10 +172,10 @@ func (s *ProviderService) listFromPostgres(ctx context.Context, params SearchPar
 	}, nil
 }
 
-// ApproveProvider transitions a provider to approved status and generates a
-// one-time onboarding token. The token is returned to the caller (admin) so
-// they can share the setup link with the provider.
-// CRITICAL: Only admins may call this method. Caller must enforce this.
+// ApproveProvider transiciona um prestador para status aprovado e gera um
+// token de onboarding de uso único. O token é retornado ao chamador (admin)
+// para compartilhar o link de configuração com o prestador.
+// CRÍTICO: Apenas admins podem chamar este método. O chamador deve impor isso.
 func (s *ProviderService) ApproveProvider(ctx context.Context, id, adminID, reason string) (string, error) {
 	if reason == "" {
 		return "", fmt.Errorf("VALIDATION_ERROR: approval reason is required")
@@ -186,7 +186,7 @@ func (s *ProviderService) ApproveProvider(ctx context.Context, id, adminID, reas
 		return "", fmt.Errorf("PROVIDER_NOT_FOUND: provider does not exist")
 	}
 
-	// Only allow pending or under_review → approved.
+	// Apenas pendentes ou em_revisão → aprovado.
 	if provider.Status != "pending" && provider.Status != "under_review" {
 		return "", fmt.Errorf("INVALID_TRANSITION: provider status is %q, cannot approve", provider.Status)
 	}
@@ -195,7 +195,7 @@ func (s *ProviderService) ApproveProvider(ctx context.Context, id, adminID, reas
 		return "", err
 	}
 
-	// Generate one-time onboarding token (valid 7 days).
+	// Gera token de onboarding de uso único (válido por 7 dias).
 	rawToken, err := GenerateSecureToken()
 	if err != nil {
 		return "", fmt.Errorf("INTERNAL_ERROR: failed to generate onboarding token")
@@ -209,8 +209,8 @@ func (s *ProviderService) ApproveProvider(ctx context.Context, id, adminID, reas
 	return rawToken, nil
 }
 
-// RejectProvider transitions a provider to rejected status with a reason.
-// CRITICAL: Only admins may call this method. Caller must enforce this.
+// RejectProvider transiciona um prestador para status rejeitado com um motivo.
+// CRÍTICO: Apenas admins podem chamar este método. O chamador deve impor isso.
 func (s *ProviderService) RejectProvider(ctx context.Context, id, adminID, reason string) error {
 	if reason == "" {
 		return fmt.Errorf("VALIDATION_ERROR: rejection reason is required")
@@ -222,23 +222,23 @@ func (s *ProviderService) RejectProvider(ctx context.Context, id, adminID, reaso
 	}
 
 	if provider.Status == "approved" {
-		// Approved providers cannot be directly rejected without re-review.
+		// Prestadores aprovados não podem ser rejeitados diretamente sem reavaliação.
 		return fmt.Errorf("INVALID_TRANSITION: cannot reject an approved provider")
 	}
 
 	return s.providers.UpdateStatus(ctx, id, "rejected", adminID, reason)
 }
 
-// DeleteOwnProvider allows an approved provider to permanently delete their own
-// account. The caller must provide their password for confirmation — the password
-// is verified against the stored hash before proceeding.
+// DeleteOwnProvider permite que um prestador aprovado exclua permanentemente sua
+// própria conta. O chamador deve fornecer sua senha para confirmação — a senha
+// é verificada contra o hash armazenado antes de prosseguir.
 //
-// Deleting the user cascades through every FK relationship:
+// Excluir o usuário cascateia por todos os relacionamentos FK:
 //   users → providers (ON DELETE CASCADE)
 //   providers → reviews, gallery images, onboarding tokens, audit records
 //   users → refresh_tokens (ON DELETE CASCADE)
 //
-// The provider is also removed from the Typesense index if present.
+// O prestador também é removido do índice Typesense se presente.
 func (s *ProviderService) DeleteOwnProvider(ctx context.Context, userID, password string) error {
 	user, err := s.users.GetByID(ctx, userID)
 	if err != nil {
@@ -254,17 +254,17 @@ func (s *ProviderService) DeleteOwnProvider(ctx context.Context, userID, passwor
 		return fmt.Errorf("PROVIDER_NOT_FOUND: no provider profile for this user")
 	}
 
-	// Only approved (or suspended) providers may self-delete. Pending/rejected
-	// providers should go through the admin flow instead.
+	// Apenas prestadores aprovados (ou suspensos) podem se autoexcluir.
+	// Pendentes/rejeitados devem seguir o fluxo admin.
 	if provider.Status != "approved" && provider.Status != "suspended" {
 		return fmt.Errorf("INVALID_STATUS: only approved providers can delete their account (current: %s)", provider.Status)
 	}
 
-	// Remove from search index first so the provider disappears immediately.
+	// Remove do índice de busca primeiro para desaparecer imediatamente.
 	s.deleteFromSearch(ctx, provider.ID)
 
-	// Delete the user — the FK cascade (users → providers → reviews, gallery,
-	// tokens, audit) tears down every piece of data owned by this account.
+	// Exclui o usuário — o cascade FK (users → providers → reviews, gallery,
+	// tokens, audit) remove todos os dados desta conta.
 	if err := s.users.Delete(ctx, userID); err != nil {
 		return fmt.Errorf("INTERNAL_ERROR: failed to delete account")
 	}
@@ -272,10 +272,10 @@ func (s *ProviderService) DeleteOwnProvider(ctx context.Context, userID, passwor
 	return nil
 }
 
-// DeleteProvider permanently removes a rejected provider and all their
-// dependent data (audit trail, bookings, reviews). Only rejected providers
-// may be deleted — this prevents accidental removal of active profiles.
-// Also removes the provider from the Typesense index if present.
+// DeleteProvider remove permanentemente um prestador rejeitado e todos os seus
+// dados dependentes (auditoria, reservas, reviews). Apenas prestadores rejeitados
+// podem ser excluídos — isso evita remoção acidental de perfis ativos.
+// Também remove o prestador do índice Typesense se presente.
 func (s *ProviderService) DeleteProvider(ctx context.Context, id string) error {
 	provider, err := s.providers.GetByID(ctx, id)
 	if err != nil {
@@ -291,7 +291,7 @@ func (s *ProviderService) DeleteProvider(ctx context.Context, id string) error {
 	return nil
 }
 
-// GetMyProvider returns the provider profile for the authenticated user.
+// GetMyProvider retorna o perfil de prestador do usuário autenticado.
 func (s *ProviderService) GetMyProvider(ctx context.Context, userID string) (*models.Provider, error) {
 	provider, err := s.providers.GetByUserID(ctx, userID)
 	if err != nil {
@@ -300,7 +300,7 @@ func (s *ProviderService) GetMyProvider(ctx context.Context, userID string) (*mo
 	return s.enrichWithUser(ctx, s.attachGallery(ctx, provider)), nil
 }
 
-// GetPendingProviders returns all providers awaiting review. Admin only.
+// GetPendingProviders retorna todos os prestadores aguardando revisão. Apenas admin.
 func (s *ProviderService) GetPendingProviders(ctx context.Context) ([]models.Provider, error) {
 	return s.providers.ListPending(ctx)
 }
@@ -335,9 +335,9 @@ func (s *ProviderService) ListAllProviders(ctx context.Context, status, search s
 	}, nil
 }
 
-// SuspendProvider deactivates an approved provider: hides them from search,
-// blocks new bookings, and logs the action in the verification audit trail.
-// Suspension is reversible (see UnsuspendProvider).
+// SuspendProvider desativa um prestador aprovado: esconde da busca,
+// bloqueia novas reservas e registra a ação na auditoria de verificação.
+// A suspensão é reversível (veja UnsuspendProvider).
 func (s *ProviderService) SuspendProvider(ctx context.Context, id, adminID, reason string) error {
 	if reason == "" {
 		return fmt.Errorf("VALIDATION_ERROR: suspension reason is required")
@@ -355,13 +355,13 @@ func (s *ProviderService) SuspendProvider(ctx context.Context, id, adminID, reas
 	if err := s.providers.UpdateStatus(ctx, id, "suspended", adminID, reason); err != nil {
 		return err
 	}
-	// Remove from search index immediately — suspended providers must
-	// not appear in public listings.
+	// Remove do índice de busca imediatamente — prestadores suspensos
+	// não devem aparecer em listagens públicas.
 	s.deleteFromSearch(ctx, id)
 	return nil
 }
 
-// UnsuspendProvider restores a suspended provider back to approved status.
+// UnsuspendProvider restaura um prestador suspenso de volta ao status aprovado.
 func (s *ProviderService) UnsuspendProvider(ctx context.Context, id, adminID, reason string) error {
 	if reason == "" {
 		return fmt.Errorf("VALIDATION_ERROR: reinstatement reason is required")
@@ -380,8 +380,8 @@ func (s *ProviderService) UnsuspendProvider(ctx context.Context, id, adminID, re
 	return nil
 }
 
-// canChangeThisMonth returns true if the given timestamp is nil or falls in a
-// different calendar month than the current time.
+// canChangeThisMonth retorna true se o timestamp for nil ou cair em um mês
+// diferente do mês atual.
 func canChangeThisMonth(lastChange *time.Time) bool {
 	if lastChange == nil {
 		return true
@@ -390,17 +390,17 @@ func canChangeThisMonth(lastChange *time.Time) bool {
 	return lastChange.Year() != now.Year() || lastChange.Month() != now.Month()
 }
 
-// UpdateProfile allows a provider to update their own profile details.
-// Business name and logo image can only be changed once per calendar month.
-// Service preferences (accepts_*) can only be changed once per calendar month.
-// Bio, location, whatsapp, and social links are freely editable.
+// UpdateProfile permite que um prestador atualize os detalhes do próprio perfil.
+// Nome do negócio e logo só podem ser alterados uma vez por mês.
+// Preferências de serviço (accepts_*) só podem ser alteradas uma vez por mês.
+// Bio, localização, whatsapp e links sociais são livremente editáveis.
 func (s *ProviderService) UpdateProfile(ctx context.Context, callerID string, p *models.Provider) error {
 	existing, err := s.providers.GetByUserID(ctx, callerID)
 	if err != nil {
 		return fmt.Errorf("PROVIDER_NOT_FOUND: no provider profile for this user")
 	}
 
-	// Only allow profile edits after the onboarding form has been completed.
+	// Só permite edições de perfil após o formulário de onboarding ter sido concluído.
 	if existing.OnboardingCompletedAt == nil {
 		return fmt.Errorf("ONBOARDING_REQUIRED: profile editing is only available after completing the onboarding form")
 	}
@@ -469,9 +469,9 @@ func ptrEqual(a, b *string) bool {
 	return *a == *b
 }
 
-// ReindexAll rebuilds the entire Typesense providers index from PostgreSQL.
-// Returns the number of approved providers indexed. Admin-only; the caller
-// is expected to enforce that.
+// ReindexAll reconstrói todo o índice Typesense de prestadores a partir do PostgreSQL.
+// Retorna o número de prestadores aprovados indexados. Apenas admin; o chamador
+// deve impor essa restrição.
 func (s *ProviderService) ReindexAll(ctx context.Context) (int, error) {
 	if s.search == nil {
 		return 0, fmt.Errorf("SEARCH_DISABLED: search service is not configured")
@@ -486,28 +486,28 @@ func (s *ProviderService) ReindexAll(ctx context.Context) (int, error) {
 	return len(providers), nil
 }
 
-// GetAuditLog returns the verification audit trail for a provider.
-// Admin-only; caller must enforce that.
+// GetAuditLog retorna a trilha de auditoria de verificação de um prestador.
+// Apenas admin; o chamador deve impor essa restrição.
 func (s *ProviderService) GetAuditLog(ctx context.Context, providerID string) ([]models.ProviderAuditEntry, error) {
 	return s.providers.GetAuditLog(ctx, providerID)
 }
 
-// SyncProvider re-indexes a single provider by ID. Public so ReviewService
-// can keep avg_rating/review_count in sync after rating recalculation.
-// Best-effort: failures are logged but never bubble up.
+// SyncProvider reindexa um único prestador por ID. Público para o ReviewService
+// manter avg_rating/review_count em sincronia após recálculo de nota.
+// Melhor esforço: falhas são logadas mas nunca propagadas.
 func (s *ProviderService) SyncProvider(ctx context.Context, id string) {
 	s.syncProvider(ctx, id)
 }
 
 // ── onboarding ────────────────────────────────────────────────────────────────
 
-// OnboardingValidation is the response from ValidateOnboardingToken.
+// OnboardingValidation é a resposta de ValidateOnboardingToken.
 type OnboardingValidation struct {
 	Provider         *models.Provider `json:"provider"`
 	NeedsCredentials bool             `json:"needsCredentials"`
 }
 
-// OnboardingData is the complete payload from the 5-section onboarding form.
+// OnboardingData é o payload completo do formulário de onboarding de 5 seções.
 type OnboardingData struct {
 	// Section 2 — Visual Profile
 	AvatarImageID   *string  `json:"avatarImageId"`
@@ -529,8 +529,8 @@ type OnboardingData struct {
 	Email    string `json:"email"`
 }
 
-// ValidateOnboardingToken checks the token and returns the provider with a
-// flag indicating whether the user still needs to create credentials.
+// ValidateOnboardingToken verifica o token e retorna o prestador com uma
+// flag indicando se o usuário ainda precisa criar credenciais.
 func (s *ProviderService) ValidateOnboardingToken(ctx context.Context, rawToken string) (*OnboardingValidation, error) {
 	stored, err := s.onboardingTokens.GetByHash(ctx, rawToken)
 	if err != nil {
@@ -548,9 +548,9 @@ func (s *ProviderService) ValidateOnboardingToken(ctx context.Context, rawToken 
 		return nil, fmt.Errorf("PROVIDER_NOT_FOUND: provider not found")
 	}
 
-	// needsCredentials is true when the provider has no linked user account yet
-	// (Case B: admin-created provider). For MVP, this is always false because
-	// providers self-register first. Wired for future use.
+	// needsCredentials é true quando o prestador não tem conta de usuário vinculada
+	// (Caso B: prestador criado por admin). Para MVP, sempre false porque
+	// prestadores se auto-registram primeiro. Preparado para uso futuro.
 	needsCredentials := provider.UserID == ""
 
 	return &OnboardingValidation{
@@ -559,9 +559,9 @@ func (s *ProviderService) ValidateOnboardingToken(ctx context.Context, rawToken 
 	}, nil
 }
 
-// CompleteOnboarding consumes the token, updates the provider profile, inserts
-// gallery images, and marks onboarding as complete. All in a single step —
-// the caller (handler) is responsible for any credential creation beforehand.
+// CompleteOnboarding consome o token, atualiza o perfil do prestador, insere
+// imagens da galeria e marca o onboarding como concluído. Tudo em um único passo —
+// o chamador (handler) é responsável por qualquer criação de credenciais antes.
 func (s *ProviderService) CompleteOnboarding(ctx context.Context, rawToken string, data OnboardingData) error {
 	stored, err := s.onboardingTokens.GetByHash(ctx, rawToken)
 	if err != nil {
@@ -579,7 +579,7 @@ func (s *ProviderService) CompleteOnboarding(ctx context.Context, rawToken strin
 		return fmt.Errorf("PROVIDER_NOT_FOUND: provider not found")
 	}
 
-	// Update profile fields.
+	// Atualiza campos do perfil.
 	bio := data.Description
 	location := data.Location
 	whatsapp := data.Whatsapp
@@ -598,7 +598,7 @@ func (s *ProviderService) CompleteOnboarding(ctx context.Context, rawToken strin
 		return fmt.Errorf("INTERNAL_ERROR: failed to update provider profile")
 	}
 
-	// Insert gallery images.
+	// Insere imagens da galeria.
 	for _, imageID := range data.GalleryImageIDs {
 		if err := s.providers.AddGalleryImage(ctx, provider.ID, imageID); err != nil {
 			log.Printf("onboarding: failed to add gallery image %s for provider %s: %v", imageID, provider.ID, err)
@@ -606,13 +606,13 @@ func (s *ProviderService) CompleteOnboarding(ctx context.Context, rawToken strin
 		}
 	}
 
-	// Consume token (one-time use).
+	// Consome token (uso único).
 	if err := s.onboardingTokens.Consume(ctx, rawToken); err != nil {
 		log.Printf("onboarding: consume token for provider %s failed: %v", provider.ID, err)
 		return fmt.Errorf("INTERNAL_ERROR: failed to consume onboarding token")
 	}
 
-	// Mark onboarding complete.
+	// Marca onboarding como concluído.
 	if err := s.providers.SetOnboardingCompleted(ctx, provider.ID); err != nil {
 		log.Printf("onboarding: set complete for provider %s failed: %v", provider.ID, err)
 		return fmt.Errorf("INTERNAL_ERROR: failed to mark onboarding complete")
@@ -622,8 +622,8 @@ func (s *ProviderService) CompleteOnboarding(ctx context.Context, rawToken strin
 	return nil
 }
 
-// RegenerateOnboardingToken creates a fresh onboarding token for an approved
-// provider, invalidating any existing unconsumed tokens. Admin-only.
+// RegenerateOnboardingToken cria um novo token de onboarding para um prestador
+// aprovado, invalidando tokens não consumidos existentes. Apenas admin.
 func (s *ProviderService) RegenerateOnboardingToken(ctx context.Context, providerID string) (string, error) {
 	provider, err := s.providers.GetByID(ctx, providerID)
 	if err != nil {
@@ -644,10 +644,10 @@ func (s *ProviderService) RegenerateOnboardingToken(ctx context.Context, provide
 	return rawToken, nil
 }
 
-// ── search helpers ────────────────────────────────────────────────────────────
+// ── helpers de busca ────────────────────────────────────────────────────────
 
-// deleteFromSearch removes a provider document from the Typesense index.
-// Best-effort: logged on failure but never bubbles up.
+// deleteFromSearch remove um documento de prestador do índice Typesense.
+// Melhor esforço: loga falhas mas nunca propaga.
 func (s *ProviderService) deleteFromSearch(ctx context.Context, id string) {
 	if s.search == nil {
 		return
@@ -698,7 +698,7 @@ func (s *ProviderService) RemoveGalleryImage(ctx context.Context, providerID, im
 	return s.providers.RemoveGalleryImage(ctx, providerID, imageID)
 }
 
-// GetGalleryImages returns all gallery images for a provider.
+// GetGalleryImages retorna todas as imagens da galeria de um prestador.
 func (s *ProviderService) GetGalleryImages(ctx context.Context, providerID string) ([]models.ProviderGalleryImage, error) {
 	return s.providers.ListGalleryImages(ctx, providerID)
 }

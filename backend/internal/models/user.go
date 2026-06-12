@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-// User represents an application user. Role is one of: owner, provider, admin.
+// User representa um usuário da aplicação. Role pode ser: owner, provider, admin.
 type User struct {
 	ID           string    `db:"id" json:"id"`
 	Email        string    `db:"email" json:"email"`

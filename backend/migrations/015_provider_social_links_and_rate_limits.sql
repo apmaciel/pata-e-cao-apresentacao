@@ -1,9 +1,9 @@
--- Add social_links JSONB column to providers (mirrors users.social_links).
+-- Adiciona coluna social_links JSONB aos prestadores (espelha users.social_links).
 ALTER TABLE providers ADD COLUMN IF NOT EXISTS social_links JSONB DEFAULT '{}';
 
--- Rate-limit tracking for restricted fields.
--- business_name and logo_image_id: one change per calendar month.
--- accepts_* service flags: one change per calendar month.
+-- Controle de rate-limit para campos restritos.
+-- business_name e logo_image_id: uma alteração por mês.
+-- flags de serviço accepts_*: uma alteração por mês.
 ALTER TABLE providers ADD COLUMN IF NOT EXISTS last_business_name_change TIMESTAMPTZ;
 ALTER TABLE providers ADD COLUMN IF NOT EXISTS last_logo_change TIMESTAMPTZ;
 ALTER TABLE providers ADD COLUMN IF NOT EXISTS last_service_change TIMESTAMPTZ;

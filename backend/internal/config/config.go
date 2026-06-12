@@ -10,13 +10,13 @@ import (
 	"github.com/joho/godotenv"
 )
 
-// Config holds all application configuration loaded from environment variables.
+// Config contém todas as configurações da aplicação carregadas de variáveis de ambiente.
 type Config struct {
-	// Server
+	// Servidor
 	Port            string
 	ShutdownTimeout time.Duration
 
-	// Database
+	// Banco de dados
 	DatabaseURL string
 
 	// JWT
@@ -24,56 +24,56 @@ type Config struct {
 	JWTAccessExpiry  time.Duration
 	JWTRefreshExpiry time.Duration
 
-	// Cookie security (set true behind HTTPS; false for local dev)
+	// Segurança de cookie (true atrás de HTTPS; false para dev local)
 	CookieSecure bool
 
-	// Frontend origin used to build password-reset URLs sent in emails.
-	// Defaults to the first allowed CORS origin so local dev works zero-config.
+	// Origem do frontend usada para construir URLs de redefinição de senha nos emails.
+	// Padrão é a primeira origem CORS permitida para dev local sem configuração.
 	FrontendURL string
 
-	// Password reset token TTL (set via env, default 1h).
+	// TTL do token de redefinição de senha (via env, padrão 1h).
 	PasswordResetTTL time.Duration
 
-	// DevMode flips on dev-only conveniences (e.g. returning the recovery
-	// link in the JSON response so engineers can test without a mail relay).
-	// Mirrors the inverse of CookieSecure: production sets COOKIE_SECURE=true.
+	// DevMode ativa conveniências de desenvolvimento (ex.: retornar o link
+	// de recuperação na resposta JSON para testes sem relay de email).
+	// Espelha o inverso de CookieSecure: produção define COOKIE_SECURE=true.
 	DevMode bool
 
-	// AdminEmails is the comma-separated allowlist that grants admin
-	// privileges. Matching is case-insensitive; whitespace around entries is
-	// trimmed. A user matching an entry has their role promoted to "admin"
-	// at token-issuance time — the DB record is untouched.
+	// AdminEmails é a lista de permissão separada por vírgulas que concede
+	// privilégios de admin. A comparação é case-insensitive; espaços ao redor
+	// são removidos. Um usuário correspondente tem seu papel promovido para
+	// "admin" no momento da emissão do token — o registro no BD não é alterado.
 	AdminEmails map[string]struct{}
 
 	// Rate limiting
 	RateLimitRequests int
 	RateLimitWindow   time.Duration
 
-	// Image storage
-	ImageStorageType string // "local" or "seaweedfs"
+	// Armazenamento de imagens
+	ImageStorageType string // "local" ou "seaweedfs"
 	ImageStoragePath string
 	SeaweedFSURL     string
 
-	// Typesense (full-text provider search; empty URL disables search and
-	// falls back to PostgreSQL ILIKE queries)
+	// Typesense (busca full-text de prestadores; URL vazia desabilita busca e
+	// usa queries ILIKE do PostgreSQL como fallback)
 	TypesenseURL    string
 	TypesenseAPIKey string
 
-	// LRU cache
+	// Cache LRU
 	LRUCacheSize int
 
 	// CORS
 	CORSOrigins string
 }
 
-// Load reads .env if present, then validates and returns the config.
+// Load lê o .env se presente, depois valida e retorna a config.
 func Load() (*Config, error) {
-	// Best-effort .env load; ignore error if file doesn't exist.
+	// Carrega .env no melhor esforço; ignora erro se arquivo não existir.
 	_ = godotenv.Load()
 
 	cfg := &Config{}
 
-	// Server
+	// Servidor
 	cfg.Port = getEnv("PORT", "8080")
 	shutdownSecs, err := strconv.Atoi(getEnv("SHUTDOWN_TIMEOUT_SECS", "30"))
 	if err != nil {
@@ -159,8 +159,8 @@ func getEnv(key, fallback string) string {
 	return fallback
 }
 
-// parseAdminEmails splits the comma-separated ADMIN_EMAILS env value into a
-// lowercased set for O(1) lookup. Blank entries are dropped. Returns a non-nil
+// parseAdminEmails divide o valor separado por vírgulas de ADMIN_EMAILS em um
+// conjunto em minúsculas para busca O(1). Blank entries are dropped. Returns a non-nil
 // empty map when the input is empty so callers can lookup without nil checks.
 func parseAdminEmails(raw string) map[string]struct{} {
 	out := make(map[string]struct{})
@@ -173,8 +173,8 @@ func parseAdminEmails(raw string) map[string]struct{} {
 	return out
 }
 
-// IsAdminEmail reports whether the given email is in the admin allowlist.
-// Matching is case-insensitive and ignores surrounding whitespace.
+// IsAdminEmail verifica se o email dado está na lista de permissão admin.
+// A comparação é case-insensitive e ignora espaços ao redor.
 func (c *Config) IsAdminEmail(email string) bool {
 	if len(c.AdminEmails) == 0 {
 		return false

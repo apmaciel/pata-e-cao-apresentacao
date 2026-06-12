@@ -10,7 +10,7 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-// PasswordReset is a single-use recovery token row.
+// PasswordReset é uma linha de token de recuperação de uso único.
 type PasswordReset struct {
 	ID        string     `db:"id"`
 	UserID    string     `db:"user_id"`
@@ -25,8 +25,8 @@ type PasswordResetRepository interface {
 	Save(ctx context.Context, userID, rawToken string, expiresAt time.Time) error
 	GetByHash(ctx context.Context, rawToken string) (*PasswordReset, error)
 	MarkUsed(ctx context.Context, id string) error
-	// InvalidateAllForUser revokes outstanding tokens, so issuing a new one
-	// or completing a reset clears any others in flight.
+	// InvalidateAllForUser revoga tokens pendentes, então emitir um novo
+	// ou completar um reset limpa quaisquer outros em trânsito.
 	InvalidateAllForUser(ctx context.Context, userID string) error
 }
 
@@ -34,7 +34,7 @@ type passwordResetRepo struct {
 	db *sqlx.DB
 }
 
-// NewPasswordResetRepository returns a PostgreSQL-backed PasswordResetRepository.
+// NewPasswordResetRepository retorna um PasswordResetRepository com PostgreSQL.
 func NewPasswordResetRepository(db *sqlx.DB) PasswordResetRepository {
 	return &passwordResetRepo{db: db}
 }

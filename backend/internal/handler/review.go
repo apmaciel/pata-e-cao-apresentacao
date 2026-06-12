@@ -11,13 +11,13 @@ import (
 	"pata-cao/internal/service"
 )
 
-// ReviewHandler handles review endpoints.
+// ReviewHandler trata endpoints de reviews.
 type ReviewHandler struct {
 	reviews  *service.ReviewService
 	validate *validator.Validate
 }
 
-// NewReviewHandler creates a new ReviewHandler.
+// NewReviewHandler cria um novo ReviewHandler.
 func NewReviewHandler(reviews *service.ReviewService) *ReviewHandler {
 	return &ReviewHandler{reviews: reviews, validate: validator.New()}
 }
@@ -27,7 +27,7 @@ type createReviewRequest struct {
 	Text   *string `json:"text"`
 }
 
-// CreateReview handles POST /api/reviews (auth required, owner role)
+// CreateReview trata POST /api/reviews (requer autenticação, papel owner)
 func (h *ReviewHandler) CreateReview(c echo.Context) error {
 	var req createReviewRequest
 	if err := c.Bind(&req); err != nil {

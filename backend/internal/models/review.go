@@ -2,8 +2,8 @@ package models
 
 import "time"
 
-// Review represents a post-booking review left by an owner for a provider.
-// Status values: pending, approved, rejected, flagged.
+// Review representa uma avaliação pós-reserva deixada por um dono para um prestador.
+// Valores de Status: pending, approved, rejected, flagged.
 type Review struct {
 	ID               string    `db:"id" json:"id"`
 	ReviewerID       string    `db:"reviewer_id" json:"reviewerId"`

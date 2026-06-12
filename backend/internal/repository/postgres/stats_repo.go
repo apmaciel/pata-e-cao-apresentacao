@@ -19,14 +19,14 @@ type AdminStats struct {
 	NewProvidersLast30Days int            `json:"newProvidersLast30Days"`
 }
 
-// ProviderGrowthPoint is a single point in the provider growth time-series.
+// ProviderGrowthPoint é um ponto único na série temporal de crescimento de prestadores.
 type ProviderGrowthPoint struct {
 	Date      string         `json:"date"`
 	Total     int            `json:"total"`
 	ByService map[string]int `json:"byService"`
 }
 
-// ProviderGrowthResponse is the time-series response for provider growth.
+// ProviderGrowthResponse é a resposta de série temporal para crescimento de prestadores.
 type ProviderGrowthResponse struct {
 	Range    string                `json:"range"`
 	Interval string                `json:"interval"`
@@ -50,7 +50,7 @@ type statsRepo struct {
 	db *sqlx.DB
 }
 
-// NewStatsRepository creates a StatsRepository.
+// NewStatsRepository cria um StatsRepository.
 func NewStatsRepository(db *sqlx.DB) StatsRepository {
 	return &statsRepo{db: db}
 }

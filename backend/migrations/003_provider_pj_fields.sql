@@ -1,13 +1,13 @@
--- Pessoa Jurídica (PJ) registration fields.
+-- Campos de registro de Pessoa Jurídica (PJ).
 --
--- legal_representative_name holds the human account holder's name when the
--- provider is a company. For PJ the business_name column stores the Razão
--- Social; user.full_name keeps the legal representative for auth purposes.
+-- legal_representative_name armazena o nome da pessoa titular da conta quando o
+-- prestador é uma empresa. Para PJ, a coluna business_name armazena a Razão
+-- Social; user.full_name mantém o representante legal para fins de autenticação.
 --
--- tax_id stores the structured identifier captured directly on the form:
--- CNPJ for PJ, optional CPF for PF (the form doesn't ask PF today but the
--- column allows future use without another migration). Validation of the
--- identifier's format is handled at the application layer.
+-- tax_id armazena o identificador estruturado capturado diretamente no formulário:
+-- CNPJ para PJ, CPF opcional para PF (o formulário não pede PF hoje, mas a
+-- coluna permite uso futuro sem outra migration). A validação do formato do
+-- identificador é feita na camada de aplicação.
 
 ALTER TABLE providers
     ADD COLUMN legal_representative_name VARCHAR(100),

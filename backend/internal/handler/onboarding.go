@@ -9,18 +9,18 @@ import (
 	"pata-cao/internal/service"
 )
 
-// OnboardingHandler handles the provider onboarding setup endpoints.
+// OnboardingHandler trata os endpoints de configuração de onboarding do prestador.
 type OnboardingHandler struct {
 	providers *service.ProviderService
 	validate  *validator.Validate
 }
 
-// NewOnboardingHandler creates a new OnboardingHandler.
+// NewOnboardingHandler cria um novo OnboardingHandler.
 func NewOnboardingHandler(providers *service.ProviderService) *OnboardingHandler {
 	return &OnboardingHandler{providers: providers, validate: validator.New()}
 }
 
-// ValidateToken handles POST /api/providers/onboarding/validate.
+// ValidateToken trata POST /api/providers/onboarding/validate.
 func (h *OnboardingHandler) ValidateToken(c echo.Context) error {
 	var body struct {
 		Token string `json:"token" validate:"required"`
@@ -40,7 +40,7 @@ func (h *OnboardingHandler) ValidateToken(c echo.Context) error {
 	return c.JSON(http.StatusOK, result)
 }
 
-// Complete handles POST /api/providers/onboarding/complete.
+// Complete trata POST /api/providers/onboarding/complete.
 func (h *OnboardingHandler) Complete(c echo.Context) error {
 	var body struct {
 		Token string                  `json:"token" validate:"required"`

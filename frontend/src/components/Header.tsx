@@ -8,7 +8,7 @@ import '../i18n.config';
 
 // initialFor renders a single-letter avatar fallback. We pick the first letter
 // of fullName (or email) so logged-in identity stays visible even when the
-// user hasn't uploaded a photo yet.
+// usuário ainda não enviou foto.
 function initialFor(user: UserProfile): string {
   const source = (user.fullName?.trim() || user.email || '?').trim();
   return source.charAt(0).toUpperCase();

@@ -29,7 +29,7 @@ export default function ProviderCarousel() {
   const trackRef = useRef<HTMLDivElement>(null);
 
   const fetchProviders = useCallback(() => {
-    // Fetch a large pool of approved providers, then randomly pick a subset
+    // Busca um conjunto grande de prestadores aprovados e seleciona aleatoriamente um subconjunto
     // so the carousel stays fresh across reloads without the risk of
     // landing on an empty page when there are few providers.
     providersApi.list({ limit: 50 }).then((data) => {

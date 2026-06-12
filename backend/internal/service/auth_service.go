@@ -28,12 +28,12 @@ var (
 	cnpjSecondWeights = []int{6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2}
 )
 
-// validateCPF checks whether a digit-only string is a valid Brazilian CPF.
+// validateCPF verifica se uma string contendo apenas dígitos é um CPF brasileiro válido.
 func validateCPF(cpf string) bool {
 	if len(cpf) != 11 {
 		return false
 	}
-	// Reject all-same-digit sequences.
+	// Rejeita sequências com todos os dígitos iguais.
 	allSame := true
 	for i := 1; i < 11; i++ {
 		if cpf[i] != cpf[0] {
@@ -44,7 +44,7 @@ func validateCPF(cpf string) bool {
 	if allSame {
 		return false
 	}
-	// First check digit.
+	// Primeiro dígito verificador.
 	var sum int
 	for i := 0; i < 9; i++ {
 		sum += int(cpf[i]-'0') * cpfFirstWeights[i]
@@ -56,7 +56,7 @@ func validateCPF(cpf string) bool {
 	if d1 != int(cpf[9]-'0') {
 		return false
 	}
-	// Second check digit.
+	// Segundo dígito verificador.
 	sum = 0
 	for i := 0; i < 10; i++ {
 		sum += int(cpf[i]-'0') * cpfSecondWeights[i]
@@ -68,7 +68,7 @@ func validateCPF(cpf string) bool {
 	return d2 == int(cpf[10]-'0')
 }
 
-// validateCNPJ checks whether a digit-only string is a valid Brazilian CNPJ.
+// validateCNPJ verifica se uma string contendo apenas dígitos é um CNPJ brasileiro válido.
 func validateCNPJ(cnpj string) bool {
 	if len(cnpj) != 14 {
 		return false
@@ -83,7 +83,7 @@ func validateCNPJ(cnpj string) bool {
 	if allSame {
 		return false
 	}
-	// First check digit.
+	// Primeiro dígito verificador.
 	var sum int
 	for i := 0; i < 12; i++ {
 		sum += int(cnpj[i]-'0') * cnpjFirstWeights[i]
@@ -95,7 +95,7 @@ func validateCNPJ(cnpj string) bool {
 	if d1 != int(cnpj[12]-'0') {
 		return false
 	}
-	// Second check digit.
+	// Segundo dígito verificador.
 	sum = 0
 	for i := 0; i < 13; i++ {
 		sum += int(cnpj[i]-'0') * cnpjSecondWeights[i]
@@ -107,7 +107,7 @@ func validateCNPJ(cnpj string) bool {
 	return d2 == int(cnpj[13]-'0')
 }
 
-// AuthService handles authentication operations.
+// AuthService trata operações de autenticação.
 type AuthService struct {
 	db                  *sqlx.DB
 	users               postgres.UserRepository
@@ -119,14 +119,14 @@ type AuthService struct {
 	accessExpiry        time.Duration
 	refreshExpiry       time.Duration
 	passwordResetExpiry time.Duration
-	// adminEmails is a lowercased set of emails that get role=admin on the
-	// JWT regardless of their stored DB role. Source of truth lives in the
-	// process config; restart picks up changes.
+	// adminEmails é um conjunto de emails em minúsculas que recebem role=admin
+	// no JWT independentemente do papel armazenado no BD. A fonte de verdade
+	// está na config do processo; reiniciar aplica mudanças.
 	adminEmails map[string]struct{}
 }
 
-// NewAuthService creates a new AuthService. The db handle is used by
-// RegisterProvider, which needs to write users + providers atomically.
+// NewAuthService cria um novo AuthService. O handle db é usado por
+// RegisterProvider, que precisa escrever users + providers atomicamente.
 func NewAuthService(
 	db *sqlx.DB,
 	users postgres.UserRepository,
@@ -155,7 +155,7 @@ func NewAuthService(
 	}
 }
 
-// SignupRequest holds validated signup data.
+// SignupRequest contém dados validados de cadastro.
 type SignupRequest struct {
 	Email    string `json:"email" validate:"required,email"`
 	Password string `json:"password" validate:"required,min=8"`
@@ -163,17 +163,17 @@ type SignupRequest struct {
 	Role     string `json:"role" validate:"omitempty,oneof=owner provider"`
 }
 
-// AuthResponse is returned on successful login/signup/refresh.
+// AuthResponse é retornado em login/signup/refresh bem-sucedidos.
 type AuthResponse struct {
 	AccessToken     string       `json:"accessToken"`
 	RefreshToken    string       `json:"refreshToken"`
-	ExpiresIn       int          `json:"expiresIn"` // seconds
+	ExpiresIn       int          `json:"expiresIn"` // segundos
 	User            *models.User `json:"user"`
 	NeedsOnboarding bool         `json:"needsOnboarding,omitempty"`
 	OnboardingToken string       `json:"onboardingToken,omitempty"`
 }
 
-// Signup creates a new user and returns tokens.
+// Signup cria um novo usuário e retorna tokens.
 func (s *AuthService) Signup(ctx context.Context, req SignupRequest) (*AuthResponse, error) {
 	if !emailRegex.MatchString(req.Email) {
 		return nil, fmt.Errorf("INVALID_EMAIL: invalid email format")
@@ -210,8 +210,8 @@ func (s *AuthService) Signup(ctx context.Context, req SignupRequest) (*AuthRespo
 	if err != nil {
 		return nil, err
 	}
-	// If the user is a provider whose profile was approved but hasn't completed
-	// onboarding, auto-generate a setup token so the frontend can redirect them.
+	// Se o usuário é um prestador cujo perfil foi aprovado mas não completou
+	// onboarding, gera automaticamente token de configuração para redirecionar.
 	if user.Role == "provider" {
 		provider, perr := s.providers.GetByUserID(ctx, user.ID)
 		if perr == nil && provider.Status == "approved" && provider.OnboardingCompletedAt == nil {
@@ -228,17 +228,17 @@ func (s *AuthService) Signup(ctx context.Context, req SignupRequest) (*AuthRespo
 	return resp, nil
 }
 
-// RegisterProviderRequest is submitted by the public "Seja um Parceiro Pet"
-// form. It creates the user account and the pending provider profile in a
-// single transaction so partial signups can never linger.
+// RegisterProviderRequest é enviado pelo formulário público "Seja um Parceiro Pet".
+// Cria a conta de usuário e o perfil de prestador pendente em uma única
+// transação para que cadastros parciais nunca fiquem órfãos.
 //
-// PF (pessoa_fisica) requires:  fullName, birthDate
-// PJ (pessoa_juridica) requires: fullName (legal representative), businessName
+// PF (pessoa_fisica) requer:  fullName, birthDate
+// PJ (pessoa_juridica) requer: fullName (representante legal), businessName
 //
 //	(razão social), taxId (CNPJ)
 //
-// Cross-field validation is enforced in the service body, not via struct tags,
-// because go-playground/validator doesn't compose "required when X" cleanly.
+// Validação cruzada de campos é feita no corpo do serviço, não via struct tags,
+// porque go-playground/validator não compõe "required when X" de forma limpa.
 type RegisterProviderRequest struct {
 	// Account
 	Email    string `json:"email" validate:"required,email"`
@@ -258,9 +258,9 @@ type RegisterProviderRequest struct {
 	SocialLink       *string `json:"socialLink"`
 }
 
-// RegisterProvider creates the user and the pending provider in one tx.
-// Both rows are committed together or neither — guarantees we never get
-// an "orphan" user without a provider application (or vice versa).
+// RegisterProvider cria o usuário e o prestador pendente em uma única transação.
+// Ambas as linhas são commitadas juntas ou nenhuma — garante que nunca teremos
+// um usuário "órfão" sem aplicação de prestador (ou vice-versa).
 func (s *AuthService) RegisterProvider(ctx context.Context, req RegisterProviderRequest) (*AuthResponse, error) {
 	if !emailRegex.MatchString(req.Email) {
 		return nil, fmt.Errorf("INVALID_EMAIL: invalid email format")
@@ -294,8 +294,8 @@ func (s *AuthService) RegisterProvider(ctx context.Context, req RegisterProvider
 			return nil, fmt.Errorf("VALIDATION_ERROR: invalid CPF")
 		}
 		taxID = req.TaxID
-		// PF: the personal name doubles as the public business name until
-		// the provider edits their profile post-approval.
+		// PF: nome pessoal serve como nome público do negócio até o prestador
+		// editar seu perfil pós-aprovação.
 		businessName = req.FullName
 	case "pessoa_juridica":
 		if req.BusinessName == nil || *req.BusinessName == "" {
@@ -308,13 +308,13 @@ func (s *AuthService) RegisterProvider(ctx context.Context, req RegisterProvider
 			return nil, fmt.Errorf("VALIDATION_ERROR: invalid CNPJ")
 		}
 		businessName = *req.BusinessName
-		// fullName on the request IS the legal representative for PJ — we
-		// keep it on user.full_name AND mirror it on providers for clarity.
+		// fullName na requisição É o representante legal para PJ — mantemos
+		// em user.full_name E espelhamos em providers para clareza.
 		lr := req.FullName
 		legalRepresentativeName = &lr
 		taxID = req.TaxID
 	default:
-		// Shouldn't reach — struct-tag oneof already gates this.
+		// Não deveria chegar aqui — struct-tag oneof já bloqueia.
 		return nil, fmt.Errorf("VALIDATION_ERROR: unsupported accountType")
 	}
 
@@ -368,9 +368,9 @@ func (s *AuthService) RegisterProvider(ctx context.Context, req RegisterProvider
 	if err != nil {
 		_ = tx.Rollback()
 		if isUniqueErr(err) {
-			// Could be providers_user_id_unique (race on the same user) or
-			// the tax_id partial unique index — both are conflicts surfaced
-			// the same way to the client.
+			// Pode ser providers_user_id_unique (concorrência no mesmo usuário) ou
+			// o índice unique parcial tax_id — ambos são conflitos reportados
+			// da mesma forma para o cliente.
 			return nil, fmt.Errorf("ALREADY_EXISTS: provider profile or tax id already registered")
 		}
 		return nil, fmt.Errorf("INTERNAL_ERROR: failed to create provider")
@@ -384,8 +384,8 @@ func (s *AuthService) RegisterProvider(ctx context.Context, req RegisterProvider
 	if err != nil {
 		return nil, err
 	}
-	// If the user is a provider whose profile was approved but hasn't completed
-	// onboarding, auto-generate a setup token so the frontend can redirect them.
+	// Se o usuário é um prestador cujo perfil foi aprovado mas não completou
+	// onboarding, gera automaticamente token de configuração para redirecionar.
 	if user.Role == "provider" {
 		provider, perr := s.providers.GetByUserID(ctx, user.ID)
 		if perr == nil && provider.Status == "approved" && provider.OnboardingCompletedAt == nil {
@@ -425,8 +425,8 @@ func (s *AuthService) Login(ctx context.Context, req LoginRequest) (*AuthRespons
 	if err != nil {
 		return nil, err
 	}
-	// If the user is a provider whose profile was approved but hasn't completed
-	// onboarding, auto-generate a setup token so the frontend can redirect them.
+	// Se o usuário é um prestador cujo perfil foi aprovado mas não completou
+	// onboarding, gera automaticamente token de configuração para redirecionar.
 	if user.Role == "provider" {
 		provider, perr := s.providers.GetByUserID(ctx, user.ID)
 		if perr == nil && provider.Status == "approved" && provider.OnboardingCompletedAt == nil {
@@ -443,7 +443,7 @@ func (s *AuthService) Login(ctx context.Context, req LoginRequest) (*AuthRespons
 	return resp, nil
 }
 
-// Refresh validates a refresh token and issues a new access token.
+// Refresh valida um refresh token e emite um novo access token.
 func (s *AuthService) Refresh(ctx context.Context, rawRefreshToken string) (*AuthResponse, error) {
 	stored, err := s.tokens.GetByHash(ctx, rawRefreshToken)
 	if err != nil {
@@ -461,7 +461,7 @@ func (s *AuthService) Refresh(ctx context.Context, rawRefreshToken string) (*Aut
 		return nil, fmt.Errorf("INTERNAL_ERROR: user not found")
 	}
 
-	// Rotate refresh token.
+	// Rotaciona refresh token.
 	if err := s.tokens.Revoke(ctx, rawRefreshToken); err != nil {
 		return nil, fmt.Errorf("INTERNAL_ERROR: failed to revoke old token")
 	}
@@ -470,8 +470,8 @@ func (s *AuthService) Refresh(ctx context.Context, rawRefreshToken string) (*Aut
 	if err != nil {
 		return nil, err
 	}
-	// If the user is a provider whose profile was approved but hasn't completed
-	// onboarding, auto-generate a setup token so the frontend can redirect them.
+	// Se o usuário é um prestador cujo perfil foi aprovado mas não completou
+	// onboarding, gera automaticamente token de configuração para redirecionar.
 	if user.Role == "provider" {
 		provider, perr := s.providers.GetByUserID(ctx, user.ID)
 		if perr == nil && provider.Status == "approved" && provider.OnboardingCompletedAt == nil {
@@ -488,26 +488,27 @@ func (s *AuthService) Refresh(ctx context.Context, rawRefreshToken string) (*Aut
 	return resp, nil
 }
 
-// Logout revokes a refresh token.
+// Logout revoga um refresh token.
 func (s *AuthService) Logout(ctx context.Context, rawRefreshToken string) error {
 	return s.tokens.Revoke(ctx, rawRefreshToken)
 }
 
-// RequestPasswordReset issues a single-use recovery token for the user with
-// the given email. The raw token is returned so the caller can build a link
-// (email it in prod, surface it in dev). When the email doesn't match a known
-// user the method returns ("", nil) — the public endpoint deliberately can't
-// distinguish "no user" from "sent" to avoid leaking account existence.
+// RequestPasswordReset emite um token de recuperação de uso único para o usuário
+// com o email fornecido. O token bruto é retornado para o chamador construir um
+// link (enviar por email em produção, expor em dev). Quando o email não corresponde
+// a um usuário conhecido, o método retorna ("", nil) — o endpoint público
+// deliberadamente não pode distinguir "sem usuário" de "enviado" para evitar
+// vazamento de existência de conta.
 func (s *AuthService) RequestPasswordReset(ctx context.Context, email string) (string, error) {
 	user, err := s.users.GetByEmail(ctx, email)
 	if err != nil {
-		// Silent no-op — same response as the success path. The handler
-		// always reports "if the email exists, a link was sent".
+		// Silencioso — mesma resposta do caminho de sucesso. O handler
+		// sempre reporta "se o email existir, um link foi enviado".
 		return "", nil
 	}
 
-	// Best-effort: invalidate prior outstanding tokens. A single user
-	// shouldn't have multiple live reset tokens floating around.
+	// Melhor esforço: invalida tokens pendentes anteriores. Um único usuário
+	// não deve ter múltiplos tokens de redefinição ativos simultaneamente.
 	_ = s.passwordResets.InvalidateAllForUser(ctx, user.ID)
 
 	rawToken, err := generateSecureToken()
@@ -521,9 +522,9 @@ func (s *AuthService) RequestPasswordReset(ctx context.Context, email string) (s
 	return rawToken, nil
 }
 
-// ConfirmPasswordReset validates the recovery token and rotates the user's
-// password. Tokens are single-use; once consumed the user's existing refresh
-// tokens are all revoked so other sessions can't survive a credential change.
+// ConfirmPasswordReset valida o token de recuperação e rotaciona a senha do
+// usuário. Tokens são de uso único; uma vez consumidos, todos os refresh tokens
+// existentes são revogados para que outras sessões não sobrevivam à troca de credenciais.
 func (s *AuthService) ConfirmPasswordReset(ctx context.Context, rawToken, newPassword string) error {
 	if rawToken == "" {
 		return fmt.Errorf("INVALID_TOKEN: missing reset token")

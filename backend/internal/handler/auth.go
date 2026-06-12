@@ -10,12 +10,12 @@ import (
 	"pata-cao/internal/service"
 )
 
-// refreshCookieName is the httpOnly cookie that carries the refresh token.
-// Path is scoped to /api/auth so it isn't sent on unrelated requests.
+// refreshCookieName é o cookie httpOnly que carrega o refresh token.
+// O caminho tem escopo /api/auth para não ser enviado em requisições não relacionadas.
 const refreshCookieName = "refresh_token"
 const refreshCookiePath = "/api/auth"
 
-// AuthHandler handles authentication endpoints.
+// AuthHandler trata endpoints de autenticação.
 type AuthHandler struct {
 	auth         *service.AuthService
 	validate     *validator.Validate
@@ -25,7 +25,7 @@ type AuthHandler struct {
 	devMode      bool
 }
 
-// NewAuthHandler creates a new AuthHandler.
+// NewAuthHandler cria um novo AuthHandler.
 func NewAuthHandler(
 	auth *service.AuthService,
 	cookieSecure bool,
@@ -43,8 +43,8 @@ func NewAuthHandler(
 	}
 }
 
-// clientAuthResponse mirrors service.AuthResponse without the RefreshToken —
-// that one travels in an httpOnly cookie, never the JSON body.
+// clientAuthResponse espelha service.AuthResponse sem o RefreshToken —
+// este viaja em um cookie httpOnly, nunca no corpo JSON.
 type clientAuthResponse struct {
 	AccessToken string      `json:"accessToken"`
 	ExpiresIn   int         `json:"expiresIn"`
@@ -85,8 +85,8 @@ func (h *AuthHandler) clearRefreshCookie(c echo.Context) {
 	})
 }
 
-// RegisterProvider handles POST /api/providers/register (public).
-// One-shot signup that creates a user + pending provider profile atomically.
+// RegisterProvider trata POST /api/providers/register (público).
+// Cadastro único que cria um usuário + perfil de prestador pendente atomicamente.
 func (h *AuthHandler) RegisterProvider(c echo.Context) error {
 	var req service.RegisterProviderRequest
 	if err := c.Bind(&req); err != nil {
@@ -105,7 +105,7 @@ func (h *AuthHandler) RegisterProvider(c echo.Context) error {
 	return c.JSON(http.StatusCreated, toClientResponse(resp))
 }
 
-// Signup handles POST /api/auth/signup
+// Signup trata POST /api/auth/signup
 func (h *AuthHandler) Signup(c echo.Context) error {
 	var req service.SignupRequest
 	if err := c.Bind(&req); err != nil {
@@ -124,7 +124,7 @@ func (h *AuthHandler) Signup(c echo.Context) error {
 	return c.JSON(http.StatusCreated, toClientResponse(resp))
 }
 
-// Login handles POST /api/auth/login
+// Login trata POST /api/auth/login
 func (h *AuthHandler) Login(c echo.Context) error {
 	var req service.LoginRequest
 	if err := c.Bind(&req); err != nil {
@@ -143,7 +143,7 @@ func (h *AuthHandler) Login(c echo.Context) error {
 	return c.JSON(http.StatusOK, toClientResponse(resp))
 }
 
-// Refresh handles POST /api/auth/refresh — reads refresh token from cookie.
+// Refresh trata POST /api/auth/refresh — lê o refresh token do cookie.
 func (h *AuthHandler) Refresh(c echo.Context) error {
 	cookie, err := c.Cookie(refreshCookieName)
 	if err != nil || cookie.Value == "" {
@@ -161,12 +161,11 @@ func (h *AuthHandler) Refresh(c echo.Context) error {
 	return c.JSON(http.StatusOK, toClientResponse(resp))
 }
 
-// RequestPasswordReset handles POST /api/auth/password-reset/request.
+// RequestPasswordReset trata POST /api/auth/password-reset/request.
 //
-// Always responds 200 with a generic "if the email exists..." message so the
-// endpoint can't be used to enumerate registered accounts. In dev mode the
-// response additionally includes `devResetLink` so engineers can complete the
-// recovery flow without a mail relay.
+// Sempre responde 200 com mensagem genérica "se o email existir..." para que
+// o endpoint não possa ser usado para enumerar contas registradas. Em modo dev
+// a resposta inclui `devResetLink` para testes sem relay de email.
 func (h *AuthHandler) RequestPasswordReset(c echo.Context) error {
 	var body struct {
 		Email string `json:"email" validate:"required,email"`
@@ -187,15 +186,15 @@ func (h *AuthHandler) RequestPasswordReset(c echo.Context) error {
 	resp := map[string]string{
 		"message": "if an account exists for that email, a reset link has been sent",
 	}
-	// Dev convenience: surface the actual link in the response so the UI can
-	// copy it locally. NEVER enabled in production (gated on devMode).
+	// Conveniência dev: expõe o link real na resposta para o UI copiar
+	// localmente. NUNCA habilitado em produção (controlado por devMode).
 	if h.devMode && rawToken != "" {
 		resp["devResetLink"] = h.frontendURL + "/auth/reset-password?token=" + rawToken
 	}
 	return c.JSON(http.StatusOK, resp)
 }
 
-// ConfirmPasswordReset handles POST /api/auth/password-reset/confirm.
+// ConfirmPasswordReset trata POST /api/auth/password-reset/confirm.
 func (h *AuthHandler) ConfirmPasswordReset(c echo.Context) error {
 	var body struct {
 		Token    string `json:"token" validate:"required"`
@@ -215,11 +214,11 @@ func (h *AuthHandler) ConfirmPasswordReset(c echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{"message": "password updated"})
 }
 
-// Logout handles DELETE /api/auth/logout — revokes refresh token from cookie.
+// Logout trata DELETE /api/auth/logout — revoga o refresh token do cookie.
 func (h *AuthHandler) Logout(c echo.Context) error {
 	cookie, err := c.Cookie(refreshCookieName)
 	if err == nil && cookie.Value != "" {
-		// Best-effort revoke; clear cookie regardless of repo result.
+		// Revogação no melhor esforço; limpa cookie independente do resultado.
 		_ = h.auth.Logout(c.Request().Context(), cookie.Value)
 	}
 	h.clearRefreshCookie(c)

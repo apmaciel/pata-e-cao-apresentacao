@@ -14,22 +14,22 @@ import (
 	"pata-cao/internal/models"
 )
 
-// ProviderFilters holds the parameters for the SQL fallback search path.
-// The shape mirrors service.SearchParams so the service layer can translate
-// directly without redefining defaults.
+// ProviderFilters contém os parâmetros para o caminho de fallback SQL.
+// O formato espelha service.SearchParams para a camada de serviço traduzir
+// diretamente sem redefinir padrões.
 type ProviderFilters struct {
-	Query          string // ILIKE matched against business_name, bio, location
-	Service        string // exact match against any element of services[]
-	SortBy         string // "rating" (default) or "reviews"
-	Page           int    // 1-based page number
-	PerPage        int    // results per page (max 50)
-	AcceptsDogs    *bool  // filter by accepts_dogs (nil = no filter)
-	AcceptsCats    *bool  // filter by accepts_cats (nil = no filter)
-	AcceptsNeutered *bool // filter by accepts_neutered (nil = no filter)
-	AcceptsIntact  *bool  // filter by accepts_intact (nil = no filter)
+	Query          string // ILIKE comparado com business_name, bio, location
+	Service        string // correspondência exata com qualquer elemento de services[]
+	SortBy         string // "rating" (padrão) ou "reviews"
+	Page           int    // número da página baseado em 1
+	PerPage        int    // resultados por página (máx 50)
+	AcceptsDogs    *bool  // filtra por accepts_dogs (nil = sem filtro)
+	AcceptsCats    *bool  // filtra por accepts_cats (nil = sem filtro)
+	AcceptsNeutered *bool // filtra por accepts_neutered (nil = sem filtro)
+	AcceptsIntact  *bool  // filtra por accepts_intact (nil = sem filtro)
 }
 
-// ProviderRepository defines persistence operations for provider profiles.
+// ProviderRepository define operações de persistência para perfis de prestadores.
 type ProviderRepository interface {
 	Create(ctx context.Context, p *models.Provider) error
 	GetByID(ctx context.Context, id string) (*models.Provider, error)
@@ -59,13 +59,13 @@ type providerRepo struct {
 	db *sqlx.DB
 }
 
-// NewProviderRepository returns a ProviderRepository backed by PostgreSQL.
+// NewProviderRepository retorna um ProviderRepository com PostgreSQL.
 func NewProviderRepository(db *sqlx.DB) ProviderRepository {
 	return &providerRepo{db: db}
 }
 
-// providerSelectColumns is the canonical column list used by every read path
-// so they stay in lockstep with scanOne / scanRows.
+// providerSelectColumns é a lista canônica de colunas usada por todos os caminhos
+// de leitura para manter sincronia com scanOne / scanRows.
 const providerSelectColumns = `
 		id, user_id, business_name, company_name, bio, location, services, status, background_check_status,
 		avg_rating, review_count, logo_image_id,
@@ -151,8 +151,8 @@ func (r *providerRepo) ListApproved(ctx context.Context, filters ProviderFilters
 	return r.scanRows(rows)
 }
 
-// ListAllApproved returns every approved provider (no pagination). Intended
-// for the admin reindex endpoint to rebuild the Typesense index from scratch.
+// ListAllApproved retorna todos os prestadores aprovados (sem paginação). Destinado
+// ao endpoint admin de reindexação para reconstruir o índice Typesense do zero.
 func (r *providerRepo) ListAllApproved(ctx context.Context) ([]models.Provider, error) {
 	rows, err := r.db.QueryContext(ctx,
 		`SELECT `+providerSelectColumns+`
@@ -164,8 +164,8 @@ func (r *providerRepo) ListAllApproved(ctx context.Context) ([]models.Provider, 
 	return r.scanRows(rows)
 }
 
-// CountApproved returns the total number of approved providers matching the
-// query and service filters (pagination fields are ignored).
+// CountApproved retorna o total de prestadores aprovados que correspondem aos
+// filtros de query e serviço (campos de paginação são ignorados).
 func (r *providerRepo) CountApproved(ctx context.Context, filters ProviderFilters) (int, error) {
 	var n int
 	err := r.db.QueryRowContext(ctx,
@@ -218,7 +218,7 @@ func (r *providerRepo) FacetServices(ctx context.Context, filters ProviderFilter
 
 // AutocompleteApproved returns up to 5 lightweight suggestions for
 // search-as-you-type, matching against business_name, bio, and location.
-// Used as the PostgreSQL fallback when Typesense is unavailable.
+// Usado como fallback PostgreSQL quando Typesense está indisponível.
 func (r *providerRepo) AutocompleteApproved(ctx context.Context, query string) ([]models.AutocompleteSuggestion, error) {
 	rows, err := r.db.QueryContext(ctx,
 		`SELECT id, business_name, logo_image_id, services, location
@@ -263,10 +263,10 @@ func (r *providerRepo) ListPending(ctx context.Context) ([]models.Provider, erro
 	return r.scanAdminRows(rows)
 }
 
-// adminSearchClause builds the WHERE fragment for the admin search field.
-// When non-empty the search token runs an ILIKE match against business_name,
-// any element of services[], and a LEFT JOIN onto users.email so admins can
-// look up providers by the email they registered with.
+// adminSearchClause constrói o fragmento WHERE para o campo de busca admin.
+// Quando não vazio, faz correspondência ILIKE com business_name,
+// qualquer elemento de services[], e LEFT JOIN em users.email para admins
+// poderem buscar prestadores pelo email de registro.
 const adminSearchClause = `
   AND ($1 = ''
     OR p.business_name ILIKE '%' || $1 || '%'
@@ -274,9 +274,9 @@ const adminSearchClause = `
     OR p.id::text ILIKE '%' || $1 || '%'
     OR u.email ILIKE '%' || $1 || '%')`
 
-// adminSelectColumns is providerSelectColumns with every column qualified by
-// "p." plus the user email + phone from the LEFT JOIN so the admin detail
-// modal can show contact info.
+// adminSelectColumns é providerSelectColumns com cada coluna qualificada por
+// "p." mais email e telefone do usuário do LEFT JOIN para o modal de detalhes
+// admin poder mostrar informações de contato.
 const adminSelectColumns = `
 		p.id, p.user_id, p.business_name, p.company_name, p.bio, p.location, p.services, p.status,
 		p.background_check_status, p.avg_rating, p.review_count, p.logo_image_id,
@@ -320,8 +320,8 @@ func (r *providerRepo) CountAll(ctx context.Context, status, search string) (int
 	return n, err
 }
 
-// UpdateStatus transitions a provider's status. Only callable by an admin
-// (caller MUST have already verified the admin role in the service layer).
+// UpdateStatus transiciona o status de um prestador. Somente chamável por um admin
+// (o chamador DEVE ter verificado o papel de admin na camada de serviço).
 func (r *providerRepo) UpdateStatus(ctx context.Context, id, status, adminID, reason string) error {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -357,8 +357,8 @@ func (r *providerRepo) UpdateStatus(ctx context.Context, id, status, adminID, re
 }
 
 func (r *providerRepo) Update(ctx context.Context, p *models.Provider) error {
-	// NOTE: status and background_check_status are intentionally excluded here.
-	// Those fields may only change via UpdateStatus (admin action).
+	// NOTA: status e background_check_status são intencionalmente excluídos aqui.
+	// Esses campos só podem ser alterados via UpdateStatus (ação admin).
 	socialLinks := p.SocialLinks
 	if len(socialLinks) == 0 {
 		socialLinks = json.RawMessage("{}")
@@ -430,8 +430,8 @@ func (r *providerRepo) scanRows(rows *sql.Rows) ([]models.Provider, error) {
 	return providers, rows.Err()
 }
 
-// scanAdminRows is used by ListAll, which LEFT JOINs users and selects
-// u.email + u.phone in addition to the canonical provider columns.
+// scanAdminRows é usada por ListAll, que faz LEFT JOIN com users e seleciona
+// u.email + u.phone além das colunas canônicas de provider.
 func (r *providerRepo) scanAdminRows(rows *sql.Rows) ([]models.Provider, error) {
 	var providers []models.Provider
 	for rows.Next() {
@@ -463,8 +463,8 @@ func nullString(s string) interface{} {
 	return s
 }
 
-// GetAuditLog returns the verification audit trail for a provider, ordered
-// most-recent first, with the admin's email included via LEFT JOIN.
+// GetAuditLog retorna a trilha de auditoria de verificação de um prestador, ordenada
+// do mais recente primeiro, com o email do admin incluído via LEFT JOIN.
 func (r *providerRepo) GetAuditLog(ctx context.Context, providerID string) ([]models.ProviderAuditEntry, error) {
 	rows, err := r.db.QueryContext(ctx,
 		`SELECT a.id, a.provider_id, a.admin_id, COALESCE(u.email, '') AS admin_email,
@@ -493,9 +493,9 @@ func (r *providerRepo) GetAuditLog(ctx context.Context, providerID string) ([]mo
 	return entries, rows.Err()
 }
 
-// Delete removes a provider and all dependent rows in a single transaction.
-// Dependent tables cleaned up: provider_verification_audit, bookings, reviews.
-// Also removes the provider from Typesense via the caller (service layer).
+// Delete remove um prestador e todas as linhas dependentes em uma única transação.
+// Tabelas dependentes limpas: provider_verification_audit, bookings, reviews.
+// Também remove o prestador do Typesense via o chamador (camada de serviço).
 func (r *providerRepo) Delete(ctx context.Context, id string) error {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -503,7 +503,7 @@ func (r *providerRepo) Delete(ctx context.Context, id string) error {
 	}
 	defer func() { _ = tx.Rollback() }()
 
-	// FK order: child tables first.
+	// Ordem FK: tabelas filhas primeiro.
 	if _, err := tx.ExecContext(ctx, `DELETE FROM provider_verification_audit WHERE provider_id = $1`, id); err != nil {
 		return err
 	}
@@ -518,7 +518,7 @@ func (r *providerRepo) Delete(ctx context.Context, id string) error {
 
 // AddGalleryImage inserts a gallery image for a provider, capping at 15.
 func (r *providerRepo) AddGalleryImage(ctx context.Context, providerID, imageID string) error {
-	// Use unique positional parameters — pgx does not support reusing $1
+	// Usa parâmetros posicionais únicos — pgx não suporta reutilizar $1
 	// across subqueries in a single statement.
 	_, err := r.db.ExecContext(ctx,
 		`INSERT INTO provider_gallery_images (provider_id, image_id, sort_order)
@@ -567,15 +567,15 @@ func (r *providerRepo) RemoveGalleryImage(ctx context.Context, providerID, image
 	return err
 }
 
-// SetOnboardingCompleted marks the provider's onboarding as complete.
+// SetOnboardingCompleted marca o onboarding do prestador como concluído.
 func (r *providerRepo) SetOnboardingCompleted(ctx context.Context, providerID string) error {
 	_, err := r.db.ExecContext(ctx,
 		`UPDATE providers SET onboarding_completed_at = NOW() WHERE id = $1`, providerID)
 	return err
 }
 
-// ExportAllProviders returns every provider (any status) with user email/phone
-// for CSV export. Pass empty statuses slice to include all statuses.
+// ExportAllProviders retorna todos os prestadores (qualquer status) com email/telefone
+// do usuário para exportação CSV. Passe slice statuses vazio para incluir todos.
 func (r *providerRepo) ExportAllProviders(ctx context.Context, statuses []string) ([]models.Provider, error) {
 	query := fmt.Sprintf(`
 		SELECT %s
@@ -603,8 +603,8 @@ func (r *providerRepo) ExportAllProviders(ctx context.Context, statuses []string
 	return r.scanAdminRows(rows)
 }
 
-// normalizePagination clamps perPage to [1, 50] (defaulting to 20) and page
-// to >= 1. Returned in (perPage, page) order so callers can compute offset.
+// normalizePagination limita perPage em [1, 50] (padrão 20) e page >= 1.
+// Retorna na ordem (perPage, page) para os chamadores computarem offset.
 func normalizePagination(perPage, page int) (int, int) {
 	if perPage <= 0 || perPage > 50 {
 		perPage = 20

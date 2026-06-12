@@ -13,22 +13,22 @@ import (
 	"pata-cao/internal/service"
 )
 
-// ProviderHandler handles provider endpoints.
+// ProviderHandler trata endpoints de prestadores.
 type ProviderHandler struct {
 	providers *service.ProviderService
 	reviews   *service.ReviewService
 	validate  *validator.Validate
 }
 
-// NewProviderHandler creates a new ProviderHandler.
+// NewProviderHandler cria um novo ProviderHandler.
 func NewProviderHandler(providers *service.ProviderService, reviews *service.ReviewService) *ProviderHandler {
 	return &ProviderHandler{providers: providers, reviews: reviews, validate: validator.New()}
 }
 
-// ListProviders handles GET /api/providers (public, approved only).
-// Query params: q, service, sort=rating|reviews, page, per_page,
+// ListProviders trata GET /api/providers (público, apenas aprovados).
+// Params: q, service, sort=rating|reviews, page, per_page,
 // acceptsDogs, acceptsCats, acceptsNeutered, acceptsIntact (boolean).
-// Response shape: { providers, total, page, perPage, facets }.
+// Formato da resposta: { providers, total, page, perPage, facets }.
 func (h *ProviderHandler) ListProviders(c echo.Context) error {
 	page, _ := strconv.Atoi(c.QueryParam("page"))
 	perPage, _ := strconv.Atoi(c.QueryParam("per_page"))
@@ -52,7 +52,7 @@ func (h *ProviderHandler) ListProviders(c echo.Context) error {
 	return c.JSON(http.StatusOK, result)
 }
 
-// GetProvider handles GET /api/providers/:id (public, approved only for unauthenticated)
+// GetProvider trata GET /api/providers/:id (público, apenas aprovados para não autenticados)
 func (h *ProviderHandler) GetProvider(c echo.Context) error {
 	id := c.Param("id")
 	callerID := mw.GetUserID(c)
@@ -73,7 +73,7 @@ type applyRequest struct {
 	Services     []string `json:"services" validate:"required,min=1"`
 }
 
-// Apply handles POST /api/providers/apply (auth required)
+// Apply trata POST /api/providers/apply (requer autenticação)
 func (h *ProviderHandler) Apply(c echo.Context) error {
 	var req applyRequest
 	if err := c.Bind(&req); err != nil {
@@ -97,7 +97,7 @@ func (h *ProviderHandler) Apply(c echo.Context) error {
 	return c.JSON(http.StatusCreated, p)
 }
 
-// GetProviderReviews handles GET /api/providers/:id/reviews (public)
+// GetProviderReviews trata GET /api/providers/:id/reviews (público)
 func (h *ProviderHandler) GetProviderReviews(c echo.Context) error {
 	providerID := c.Param("id")
 	reviews, err := h.reviews.GetProviderReviews(c.Request().Context(), providerID)
@@ -110,8 +110,8 @@ func (h *ProviderHandler) GetProviderReviews(c echo.Context) error {
 	return c.JSON(http.StatusOK, reviews)
 }
 
-// GetMyProvider handles GET /api/providers/me (auth required).
-// Returns the authenticated user's own provider profile.
+// GetMyProvider trata GET /api/providers/me (requer autenticação).
+// Retorna o perfil de prestador do usuário autenticado.
 func (h *ProviderHandler) GetMyProvider(c echo.Context) error {
 	userID := mw.GetUserID(c)
 	provider, err := h.providers.GetMyProvider(c.Request().Context(), userID)
@@ -135,8 +135,8 @@ type updateMyProviderRequest struct {
 	SocialLinks     json.RawMessage `json:"socialLinks"`
 }
 
-// UpdateMyProvider handles PUT /api/providers/me (auth required).
-// Allows providers to edit their profile with rate-limiting on restricted fields.
+// UpdateMyProvider trata PUT /api/providers/me (requer autenticação).
+// Permite que prestadores editem seu perfil com rate-limiting em campos restritos.
 func (h *ProviderHandler) UpdateMyProvider(c echo.Context) error {
 	var req updateMyProviderRequest
 	if err := c.Bind(&req); err != nil {
@@ -164,7 +164,7 @@ func (h *ProviderHandler) UpdateMyProvider(c echo.Context) error {
 		return apiError(c, code, errCode, msg)
 	}
 
-	// Return the updated provider.
+	// Retorna o prestador atualizado.
 	updated, err := h.providers.GetMyProvider(c.Request().Context(), mw.GetUserID(c))
 	if err != nil {
 		code, errCode, msg := parseServiceError(err)
@@ -181,9 +181,9 @@ type deleteMyProviderRequest struct {
 	Password string `json:"password" validate:"required"`
 }
 
-// DeleteMyProvider handles DELETE /api/providers/me (auth required).
-// Allows an approved provider to permanently delete their own account,
-// with password confirmation as a safety guard.
+// DeleteMyProvider trata DELETE /api/providers/me (requer autenticação).
+// Permite que um prestador aprovado exclua permanentemente sua própria conta,
+// com confirmação de senha como proteção de segurança.
 func (h *ProviderHandler) DeleteMyProvider(c echo.Context) error {
 	var req deleteMyProviderRequest
 	if err := c.Bind(&req); err != nil {
@@ -223,7 +223,7 @@ func (h *ProviderHandler) AddGalleryImage(c echo.Context) error {
 		return apiError(c, code, errCode, msg)
 	}
 
-	// Return updated gallery.
+	// Retorna galeria atualizada.
 	images, err := h.providers.GetGalleryImages(c.Request().Context(), provider.ID)
 	if err != nil {
 		return apiError(c, http.StatusInternalServerError, "INTERNAL_ERROR", "failed to load gallery")

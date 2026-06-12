@@ -12,7 +12,7 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-// Connect opens a sqlx database connection using the pgx driver.
+// Connect abre uma conexão sqlx usando o driver pgx.
 func Connect(databaseURL string) (*sqlx.DB, error) {
 	db, err := sqlx.Open("pgx", databaseURL)
 	if err != nil {
@@ -21,16 +21,16 @@ func Connect(databaseURL string) (*sqlx.DB, error) {
 	if err := db.PingContext(context.Background()); err != nil {
 		return nil, fmt.Errorf("ping db: %w", err)
 	}
-	// Register the pgx driver explicitly so sqlx can use it.
+	// Registra o driver pgx explicitamente para o sqlx poder usá-lo.
 	_ = stdlib.GetDefaultDriver()
 	return db, nil
 }
 
-// RunMigrations reads all *.sql files from migrationsDir (sorted by name)
-// and executes each one inside a transaction. Files already applied are
-// tracked via the schema_migrations table.
+// RunMigrations lê todos os arquivos *.sql de migrationsDir (ordenados por nome)
+// e executa cada um dentro de uma transação. Arquivos já aplicados são
+// rastreados via tabela schema_migrations.
 func RunMigrations(db *sqlx.DB, migrationsDir string) error {
-	// Ensure tracking table exists.
+	// Garante que a tabela de rastreamento existe.
 	_, err := db.Exec(`CREATE TABLE IF NOT EXISTS schema_migrations (
 		filename TEXT PRIMARY KEY,
 		applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()

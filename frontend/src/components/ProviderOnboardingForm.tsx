@@ -201,7 +201,7 @@ export default function ProviderOnboardingForm() {
           const result = await uploadImage(slot.file, 'provider', token!);
           ids.push(result.imageId);
         } catch {
-          // skip failed uploads
+          // ignora uploads com falha
         }
       }
     }

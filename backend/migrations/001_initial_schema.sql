@@ -1,8 +1,8 @@
--- Initial schema for PATA & CÃO pet services marketplace.
+-- Schema inicial para o marketplace de serviços pet PATA & CÃO.
 
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
--- ── Users ─────────────────────────────────────────────────────────────────────
+-- ── Usuários ──────────────────────────────────────────────────────────────────
 CREATE TABLE users (
     id            UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
     email         VARCHAR(255) UNIQUE NOT NULL,
@@ -14,7 +14,7 @@ CREATE TABLE users (
     updated_at    TIMESTAMPTZ  NOT NULL DEFAULT NOW()
 );
 
--- ── Providers ─────────────────────────────────────────────────────────────────
+-- ── Prestadores ──────────────────────────────────────────────────────────────
 CREATE TABLE providers (
     id                      UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id                 UUID          NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -38,7 +38,7 @@ CREATE TABLE providers (
     CONSTRAINT providers_user_id_unique UNIQUE (user_id)
 );
 
--- ── Provider verification audit ───────────────────────────────────────────────
+-- ── Auditoria de verificação de prestadores ────────────────────────────────────
 CREATE TABLE provider_verification_audit (
     id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
     provider_id     UUID        NOT NULL REFERENCES providers(id),

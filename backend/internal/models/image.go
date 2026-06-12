@@ -2,7 +2,7 @@ package models
 
 import "time"
 
-// ImageMetadata describes a stored image asset.
+// ImageMetadata descreve um ativo de imagem armazenado.
 type ImageMetadata struct {
 	ID          string    `json:"id"`
 	Path        string    `json:"path"`
