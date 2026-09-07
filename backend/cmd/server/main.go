@@ -52,6 +52,7 @@ func main() {
 	providerRepo := postgres.NewProviderRepository(db)
 	onboardingTokenRepo := postgres.NewOnboardingTokenRepository(db)
 	reviewRepo := postgres.NewReviewRepository(db)
+	reportRepo := postgres.NewReportRepository(db)
 	tokenRepo := postgres.NewTokenRepository(db)
 	passwordResetRepo := postgres.NewPasswordResetRepository(db)
 
@@ -79,6 +80,7 @@ func main() {
 	)
 	providerSvc := service.NewProviderService(providerRepo, searchSvc, onboardingTokenRepo, userRepo)
 	reviewSvc := service.NewReviewService(reviewRepo, providerRepo, searchSvc)
+	reportSvc := service.NewReportService(reportRepo, providerRepo)
 	imageSvc, err := service.NewImageService(cfg.LRUCacheSize, cfg.ImageStorageType, cfg.ImageStoragePath, cfg.SeaweedFSURL)
 	if err != nil {
 		log.Fatalf("image service init failed: %v", err)
@@ -102,6 +104,7 @@ func main() {
 	authH := handler.NewAuthHandler(authSvc, cfg.CookieSecure, cfg.JWTRefreshExpiry, cfg.FrontendURL, cfg.DevMode)
 	providerH := handler.NewProviderHandler(providerSvc, reviewSvc)
 	reviewH := handler.NewReviewHandler(reviewSvc)
+	reportH := handler.NewReportHandler(reportSvc)
 	imageH := handler.NewImageHandler(imageSvc, cfg.CORSOrigins, cfg.JWTSecret, onboardingTokenRepo)
 	adminH := handler.NewAdminHandler(providerSvc, adminSvc)
 	searchH := handler.NewSearchHandler(providerSvc)
@@ -156,6 +159,7 @@ func main() {
 	providers.POST("/register", authH.RegisterProvider)                           // público — cadastro + aplicação combinados
 	providers.POST("/apply", providerH.Apply, jwtMw)                              // requer autenticação
 	providers.GET("/:id/reviews", providerH.GetProviderReviews)                   // público
+	providers.POST("/:id/report", reportH.SubmitReport)                          // público — sem autenticação
 	providers.POST("/onboarding/validate", onboardingH.ValidateToken)             // público — o token é a autenticação
 	providers.POST("/onboarding/complete", onboardingH.Complete)                  // público — o token é a autenticação
 
@@ -184,6 +188,9 @@ func main() {
 	adminGroup.DELETE("/providers/:id", adminH.DeleteProvider)
 	adminGroup.POST("/cache/invalidate", imageH.InvalidateCache)
 	adminGroup.POST("/search/reindex", searchH.Reindex)
+	adminGroup.GET("/reports", reportH.ListReportedProviders)
+	adminGroup.GET("/reports/:providerId", reportH.GetProviderReportLog)
+	adminGroup.POST("/reports/:providerId/review", reportH.MarkReviewed)
 
 	// Autocomplete de busca (público)
 	api.GET("/search/autocomplete", searchH.Autocomplete)

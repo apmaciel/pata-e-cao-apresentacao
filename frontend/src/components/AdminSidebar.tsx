@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { FiClipboard, FiArchive, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
+import { FiClipboard, FiArchive, FiFlag, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 import '../i18n.config';
 
 interface AdminSidebarProps {
@@ -20,6 +20,7 @@ export default function AdminSidebar({
   const links = [
     { section: 'applications', icon: FiClipboard, label: t('admin.sidebar.applications') },
     { section: 'providers', icon: FiArchive, label: t('admin.sidebar.providers') },
+    { section: 'reports', icon: FiFlag, label: t('admin.sidebar.reports') },
   ];
 
   return (

@@ -4,9 +4,10 @@ import { auth, getToken } from '../services/api';
 import AdminSidebar from './AdminSidebar';
 import ApplicationsPanel from './ApplicationsPanel';
 import ProvidersPanel from './ProvidersPanel';
+import ReportsPanel from './ReportsPanel';
 import '../i18n.config';
 
-const SECTIONS = ['applications', 'providers'] as const;
+const SECTIONS = ['applications', 'providers', 'reports'] as const;
 type Section = typeof SECTIONS[number];
 
 export default function AdminShell() {
@@ -78,6 +79,7 @@ export default function AdminShell() {
           <>
             {activeSection === 'applications' && <ApplicationsPanel sessionReady={sessionReady} />}
             {activeSection === 'providers' && <ProvidersPanel sessionReady={sessionReady} />}
+            {activeSection === 'reports' && <ReportsPanel sessionReady={sessionReady} />}
           </>
         )}
       </div>

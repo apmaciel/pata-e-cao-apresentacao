@@ -4,8 +4,9 @@ import '../i18n.config';
 import { providers, authReady, type ProviderDetail } from '../services/api';
 import { API_URL } from '../utils/config';
 import { serviceLabel } from '../utils/adminHelpers';
-import { FiArrowLeft, FiMapPin, FiLink, FiCheck, FiX, FiEdit2, FiLinkedin, FiInstagram, FiGlobe, FiMail, FiMessageCircle, FiCheckCircle, FiTrash2, FiAlertTriangle } from 'react-icons/fi';
+import { FiArrowLeft, FiMapPin, FiLink, FiCheck, FiX, FiEdit2, FiLinkedin, FiInstagram, FiGlobe, FiMail, FiMessageCircle, FiCheckCircle, FiTrash2, FiAlertTriangle, FiFlag } from 'react-icons/fi';
 import ProviderProfileEdit from './ProviderProfileEdit';
+import ReportProviderModal from './ReportProviderModal';
 
 const SOCIAL_PLATFORMS: { key: string; icon: typeof FiLinkedin }[] = [
   { key: 'linkedin', icon: FiLinkedin },
@@ -27,6 +28,7 @@ export default function ProviderPublicProfile() {
   const [lightbox, setLightbox] = useState<string | null>(null);
   const [contactOpen, setContactOpen] = useState(false);
   const contactRef = useRef<HTMLDivElement>(null);
+  const [showReportModal, setShowReportModal] = useState(false);
 
   // Delete account state.
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -330,9 +332,21 @@ export default function ProviderPublicProfile() {
 
           {/* Share profile */}
           <div>
-            <h3 className="font-display font-bold text-xs uppercase tracking-wider text-footer/60 mb-3">
-              {t('providerProfile.share')}
-            </h3>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-display font-bold text-xs uppercase tracking-wider text-footer/60">
+                {t('providerProfile.share')}
+              </h3>
+              {!isOwn && (
+                <button
+                  type="button"
+                  onClick={() => setShowReportModal(true)}
+                  className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-footer/40 hover:text-red-600 transition-colors"
+                >
+                  <FiFlag className="w-3.5 h-3.5" />
+                  {t('providerProfile.report')}
+                </button>
+              )}
+            </div>
             <div className="flex flex-wrap gap-2">
               {/* WhatsApp */}
               <a
@@ -504,6 +518,15 @@ export default function ProviderPublicProfile() {
             onClick={(e) => e.stopPropagation()}
           />
         </div>
+      )}
+
+      {/* Report provider */}
+      {showReportModal && (
+        <ReportProviderModal
+          providerId={provider.id}
+          businessName={provider.businessName}
+          onClose={() => setShowReportModal(false)}
+        />
       )}
     </div>
   );

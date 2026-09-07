@@ -223,9 +223,20 @@
       "dashboard": "Painel",
       "applications": "Candidaturas",
       "providers": "Prestadores",
+      "reports": "Denúncias",
       "expand": "Expandir menu",
       "collapse": "Recolher menu"
     },
+    "reportsOpen": "Abertas",
+    "reportsAll": "Todas",
+    "reportsEmpty": "Nenhuma denúncia registrada.",
+    "reportsCount": "Denúncias",
+    "reportsLastAt": "Última denúncia",
+    "reportsMarkReviewed": "Marcar como revisado",
+    "reportsLog": "Histórico de denúncias",
+    "reportsLogEmpty": "Nenhuma denúncia registrada.",
+    "reportsStatusOpen": "Aberta",
+    "reportsStatusReviewed": "Revisada",
     "stats": {
       "title": "Dashboard",
       "totalUsers": "Total de Usuários",
@@ -560,6 +571,23 @@
     "deleteAccountButton": "Sim, excluir minha conta",
     "deleteAccountCancel": "Cancelar",
     "deleteAccountError": "Senha incorreta. Tente novamente.",
-    "deleteAccountSuccess": "Conta excluída com sucesso. Você será redirecionado."
+    "deleteAccountSuccess": "Conta excluída com sucesso. Você será redirecionado.",
+    "report": "Denunciar",
+    "reportTitle": "Denunciar prestador",
+    "reportReasonLabel": "Motivo da denúncia",
+    "reportReasons": {
+      "fraud": "Fraude",
+      "inappropriate_behavior": "Comportamento inadequado",
+      "false_information": "Informações falsas",
+      "other": "Outro"
+    },
+    "reportDetailsLabel": "Detalhes (opcional)",
+    "reportDetailsPlaceholder": "Conte mais sobre o ocorrido...",
+    "reportCancel": "Cancelar",
+    "reportSubmit": "Enviar denúncia",
+    "reportSuccessTitle": "Denúncia enviada",
+    "reportSuccessBody": "Obrigado por avisar. Nossa equipe vai avaliar o caso.",
+    "reportClose": "Fechar",
+    "reportError": "Não foi possível enviar sua denúncia. Tente novamente."
   }
 }

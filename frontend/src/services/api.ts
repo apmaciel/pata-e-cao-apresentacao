@@ -1,4 +1,5 @@
 import { API_URL } from '../utils/config';
+import { getReporterFingerprint } from '../utils/reporterFingerprint';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -118,6 +119,26 @@ export interface Review {
   rating: number;
   comment: string;
   createdAt: string;
+}
+
+export type ReportReason = 'fraud' | 'inappropriate_behavior' | 'false_information' | 'other';
+
+export interface ProviderReport {
+  id: string;
+  providerId: string;
+  reason: ReportReason;
+  details?: string;
+  status: 'open' | 'reviewed';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProviderReportSummary {
+  providerId: string;
+  businessName: string;
+  providerStatus: string;
+  reportCount: number;
+  lastReportAt: string;
 }
 
 // ─── Download autenticado de documentos ────────────────────────────────────────
@@ -472,6 +493,19 @@ export const admin = {
   getProviderGrowth: (range: string): Promise<ProviderGrowthResponse> => {
     return apiFetch<ProviderGrowthResponse>(`/api/admin/stats/providers?range=${encodeURIComponent(range)}`);
   },
+
+  listReports: (status?: string): Promise<ProviderReportSummary[]> => {
+    const qs = status ? `?status=${encodeURIComponent(status)}` : '';
+    return apiFetch<ProviderReportSummary[]>(`/api/admin/reports${qs}`);
+  },
+
+  getReportLog: (providerId: string): Promise<ProviderReport[]> => {
+    return apiFetch<ProviderReport[]>(`/api/admin/reports/${providerId}`);
+  },
+
+  markReportsReviewed: (providerId: string): Promise<void> => {
+    return apiFetch<void>(`/api/admin/reports/${providerId}/review`, { method: 'POST' });
+  },
 };
 
 export interface AdminAuditEntry {
@@ -618,6 +652,19 @@ export const providers = {
   },
 };
 
+// ─── Reports ──────────────────────────────────────────────────────────────────
+
+// Public: no login required — identifies the reporter via a persistent
+// anonymous browser fingerprint so repeated reports from the same visitor
+// dedupe server-side instead of piling up.
+export const reports = {
+  submit: (providerId: string, reason: ReportReason, details?: string): Promise<void> => {
+    return apiFetch<void>(`/api/providers/${providerId}/report`, {
+      method: 'POST',
+      body: JSON.stringify({ reporterId: getReporterFingerprint(), reason, details }),
+    });
+  },
+};
 
 // ─── Search Autocomplete ──────────────────────────────────────────────────────
 
