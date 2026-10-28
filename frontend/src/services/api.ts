@@ -654,9 +654,9 @@ export const providers = {
 
 // ─── Reports ──────────────────────────────────────────────────────────────────
 
-// Public: no login required — identifies the reporter via a persistent
-// anonymous browser fingerprint so repeated reports from the same visitor
-// dedupe server-side instead of piling up.
+// Public: no login required — tags each report with a persistent anonymous
+// browser fingerprint. Every submission is logged as a new report; the
+// fingerprint lets the admin spot repeated reports from the same visitor.
 export const reports = {
   submit: (providerId: string, reason: ReportReason, details?: string): Promise<void> => {
     return apiFetch<void>(`/api/providers/${providerId}/report`, {
