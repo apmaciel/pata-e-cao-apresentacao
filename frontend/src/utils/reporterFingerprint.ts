@@ -11,9 +11,9 @@ function generateId(): string {
 }
 
 // getReporterFingerprint returns a persistent anonymous id identifying this
-// browser for report deduplication, generating and storing one on first use.
+// browser on each report, generating and storing one on first use.
 // Falls back to an in-memory id (lost on reload) if localStorage is blocked,
-// so reporting still works — just without cross-visit dedup.
+// so reporting still works — just without a stable id across visits.
 export function getReporterFingerprint(): string {
   try {
     let id = localStorage.getItem(STORAGE_KEY);

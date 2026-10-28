@@ -25,22 +25,19 @@ func NewReportRepository(db *sqlx.DB) ReportRepository {
 	return &reportRepo{db: db}
 }
 
-// Create insere uma nova denúncia ou, se o denunciante já denunciou este
-// prestador antes, atualiza a denúncia existente (motivo, detalhes e volta
-// para status 'open') em vez de criar uma duplicata.
+// Create registra uma nova denúncia. O log é append-only: cada envio vira
+// uma nova linha (mesmo do mesmo denunciante), para que a contagem e a data
+// da última denúncia no painel do admin avancem a cada denúncia.
 func (r *reportRepo) Create(ctx context.Context, providerID, fingerprint, reason string, details *string) error {
 	_, err := r.db.ExecContext(ctx, `
 		INSERT INTO provider_reports (provider_id, reporter_fingerprint, reason, details)
-		VALUES ($1, $2, $3, $4)
-		ON CONFLICT (provider_id, reporter_fingerprint)
-		DO UPDATE SET reason = EXCLUDED.reason, details = EXCLUDED.details,
-		              status = 'open', updated_at = NOW()`,
+		VALUES ($1, $2, $3, $4)`,
 		providerID, fingerprint, reason, details)
 	return err
 }
 
 // ListSummary retorna, para cada prestador com ao menos uma denúncia, a
-// contagem de denúncias únicas (uma linha = um denunciante) e a mais recente.
+// contagem total de denúncias (uma linha = um envio) e a mais recente.
 // status filtra por 'open'/'reviewed'; string vazia retorna todos.
 func (r *reportRepo) ListSummary(ctx context.Context, status string) ([]models.ProviderReportSummary, error) {
 	var summaries []models.ProviderReportSummary
