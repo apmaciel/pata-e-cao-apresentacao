@@ -11,7 +11,9 @@ services:
       POSTGRES_PASSWORD: dev
       POSTGRES_DB: pata_cao
     ports:
-      - "5432:5432"
+      # Loopback only: Docker publishes ports around ufw, so a bare "5432:5432"
+      # is reachable from the internet on a public VPS. Same for every port below.
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       # No /docker-entrypoint-initdb.d/ mount: schema is owned by the
@@ -33,7 +35,7 @@ services:
     container_name: pata_cao_apresentacao_typesense
     restart: unless-stopped
     ports:
-      - "8108:8108"
+      - "127.0.0.1:8108:8108"
     # Resolve the container's bridge IP at boot and pass it as
     # --peering-address. Without this, Typesense's default interface
     # autodetect can pick an ingress/overlay address that Raft cannot
@@ -74,8 +76,8 @@ services:
     container_name: pata_cao_apresentacao_seaweedfs
     restart: unless-stopped
     ports:
-      - "9333:9333"   # master (optional, for weed shell / admin)
-      - "8888:8888"   # filer — backend SEAWEEDFS_URL points here
+      - "127.0.0.1:9333:9333"   # master (optional, for weed shell / admin)
+      - "127.0.0.1:8888:8888"   # filer — backend SEAWEEDFS_URL points here
     command: >
       server
       -dir=/data
@@ -95,7 +97,10 @@ services:
   # ---------------------------------------------------------------------------
   # Go/Echo Backend
   # env_file is optional — all required vars are set in environment below.
-  # Copy backend/.env.example → backend/.env to override any of these defaults.
+  # Copy backend/.env.example → backend/.env for vars not set below
+  # (COOKIE_SECURE, FRONTEND_URL, ADMIN_EMAILS...). Keys set in environment:
+  # below always win over backend/.env; production overrides them in
+  # docker-compose.prod.yml.
   # ---------------------------------------------------------------------------
   backend:
     build:
@@ -104,7 +109,7 @@ services:
     container_name: pata_cao_apresentacao_backend
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
     depends_on:
       postgres:
         condition: service_healthy
@@ -125,7 +130,8 @@ services:
       TYPESENSE_URL: http://typesense:8108
       TYPESENSE_API_KEY: dev-api-key
       CORS_ORIGINS: http://localhost:3000
-      # JWT_SECRET must be overridden in backend/.env for security
+      # Dev-only defaults (CORS_ORIGINS above too): docker-compose.prod.yml
+      # replaces both, since backend/.env cannot override keys set here.
       JWT_SECRET: change-me-in-production-use-32-char-minimum-abcdefgh
     volumes:
       - backend_images:/app/data/images
@@ -143,7 +149,7 @@ services:
     container_name: pata_cao_apresentacao_frontend
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     depends_on:
       - backend
 

@@ -1,0 +1,18 @@
+# Production overrides on top of docker-compose.yml. On the server:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+# or put COMPOSE_FILE=docker-compose.yml:docker-compose.prod.yml in the .env next
+# to this file and run plain `docker compose up -d --build`.
+#
+# JWT_SECRET comes from that same .env (never commit it); compose refuses to
+# start without it, so the dev default can't reach production by accident.
+services:
+  backend:
+    environment:
+      CORS_ORIGINS: https://pataecao.com.br
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env (openssl rand -hex 32)}
+
+  frontend:
+    build:
+      args:
+        # Baked into the JS bundle at build time; nginx proxies /api/ to the backend.
+        PUBLIC_API_URL: https://pataecao.com.br
