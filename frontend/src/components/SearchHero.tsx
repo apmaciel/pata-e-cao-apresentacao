@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import '../i18n.config';
 import { FiSearch, FiFilter, FiMapPin } from 'react-icons/fi';
 import { search, AutocompleteSuggestion } from '../services/api';
 import { API_URL } from '../utils/config';
