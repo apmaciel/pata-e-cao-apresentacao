@@ -133,6 +133,10 @@ services:
       # Dev-only defaults (CORS_ORIGINS above too): docker-compose.prod.yml
       # replaces both, since backend/.env cannot override keys set here.
       JWT_SECRET: change-me-in-production-use-32-char-minimum-abcdefgh
+      # Dev-only: returns the password-reset link in the API response, since
+      # there is no email sender. docker-compose.prod.yml turns it off, and the
+      # backend refuses to start with it on and a non-local FRONTEND_URL.
+      DEV_MODE: "true"
     volumes:
       - backend_images:/app/data/images
 

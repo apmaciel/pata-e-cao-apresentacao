@@ -1,4 +1,5 @@
-const CACHE_NAME = 'pata-cao-images-v2';
+// v3: descarta o cache v2, que podia guardar documentos de identidade vistos por admins.
+const CACHE_NAME = 'pata-cao-images-v3';
 
 // Imagens padrão/estáticas são efetivamente imutáveis — cache longo.
 const DEFAULT_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 dias
@@ -68,6 +69,11 @@ self.addEventListener('fetch', (event) => {
 
   if (!url.pathname.startsWith('/api/images/')) {
     return; // intercepta apenas requisições de API de imagem
+  }
+
+  // Documentos de identidade (só admin) nunca entram no cache do navegador.
+  if (url.pathname.startsWith('/api/images/doc-')) {
+    return;
   }
 
   event.respondWith(staleWhileRevalidate(event.request));
