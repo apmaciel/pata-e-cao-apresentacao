@@ -176,16 +176,17 @@ export default function ProviderCard({
                       <span className="truncate">{email}</span>
                     </a>
                   )}
-                  {(phone || whatsapp) && (
+                  {/* Owners edit whatsapp; phone is only the registration fallback, so whatsapp wins. */}
+                  {(whatsapp || phone) && (
                     <a
-                      href={`https://wa.me/${(phone || whatsapp || '').replace(/\D/g, '')}`}
+                      href={`https://wa.me/${(whatsapp || phone || '').replace(/\D/g, '')}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={(e) => e.stopPropagation()}
                       className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-green-50 transition-colors text-footer text-xs font-medium"
                     >
                       <FiMessageCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
-                      <span>{phone || whatsapp}</span>
+                      <span>{whatsapp || phone}</span>
                     </a>
                   )}
                 </div>
