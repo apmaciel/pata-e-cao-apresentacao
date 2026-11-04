@@ -2,9 +2,9 @@ import { useTranslation } from 'react-i18next';
 import '../i18n.config';
 
 const serviceImages: Record<string, string> = {
-  hospedagem:  '/services-hospedagem.png',
-  passeadores: '/services-passeadores.png',
-  adestradores: '/services-adestradores.png',
+  hospedagem:  '/services-hospedagem.webp',
+  passeadores: '/services-passeadores.webp',
+  adestradores: '/services-adestradores.webp',
 };
 
 const serviceLinks: Record<string, string> = {
