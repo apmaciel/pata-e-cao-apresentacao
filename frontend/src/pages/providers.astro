@@ -9,6 +9,10 @@ import SearchProviders from '../components/SearchProviders';
   title="Prestadores — PATA & CÃO"
   description="Encontre e filtre prestadores de serviços pet verificados perto de você."
 >
-  <SearchHero mode="inline" client:only="react" />
+  {/* The hero reads the URL query on mount, so it stays client-only. Reserve its height
+      (~142px) so the results below do not jump when it appears. */}
+  <div class="min-h-[8.9rem]">
+    <SearchHero mode="inline" client:only="react" />
+  </div>
   <SearchProviders client:only="react" />
 </AppLayout>
