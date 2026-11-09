@@ -11,8 +11,11 @@ import AboutSection from '../components/AboutSection';
   title="PATA & CÃO — Plataforma Pet"
   description="Encontre prestadores de serviços pet verificados e confiáveis: hospedagem, passeadores e adestradores."
 >
-  <SearchHero client:only="react" />
-  <ProviderCarousel client:only="react" />
-  <ServicesSection client:only="react" />
-  <AboutSection client:only="react" />
+  {/* Rendered to HTML at build time, so every section is in place before any JS runs.
+      With client:only they were empty until hydration, and each one popping in shifted the page.
+      ServicesSection and AboutSection are static and need no JS at all. */}
+  <SearchHero client:load />
+  <ProviderCarousel client:load />
+  <ServicesSection />
+  <AboutSection />
 </AppLayout>

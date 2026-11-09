@@ -1,0 +1,21 @@
+---
+import '../i18n.config';
+import AppLayout from '../layouts/AppLayout.astro';
+---
+
+<AppLayout
+  title="Página não encontrada — PATA & CÃO"
+  description="A página que você procura não existe ou foi movida."
+>
+  <section class="mx-auto flex max-w-xl flex-col items-center px-4 py-24 text-center">
+    <p class="font-display text-7xl font-black text-primary">404</p>
+    <h1 class="mt-4 font-display text-2xl font-bold text-gray-900">Página não encontrada</h1>
+    <p class="mt-2 text-gray-600">O endereço que você acessou não existe ou foi movido.</p>
+    <a
+      href="/"
+      class="mt-8 rounded-full bg-primary px-6 py-3 font-semibold text-white transition hover:bg-primary-dark"
+    >
+      Voltar para o início
+    </a>
+  </section>
+</AppLayout>

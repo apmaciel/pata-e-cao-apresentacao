@@ -66,9 +66,10 @@ export default function ProviderCarousel() {
       <div className="max-w-7xl mx-auto px-4">
         {/* Section heading */}
 
-        {/* Carousel container with fade edges */}
+        {/* Carousel container with fade edges. min-h is the tallest card (~383px), so the
+            loading skeleton and the loaded track take the same space and nothing below shifts. */}
         <div
-          className="relative"
+          className="relative min-h-[24rem]"
           onMouseEnter={() => setPaused(true)}
           onMouseLeave={() => setPaused(false)}
         >

@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -36,7 +37,8 @@ type Config struct {
 
 	// DevMode ativa conveniências de desenvolvimento (ex.: retornar o link
 	// de recuperação na resposta JSON para testes sem relay de email).
-	// Espelha o inverso de CookieSecure: produção define COOKIE_SECURE=true.
+	// Exige DEV_MODE=true explícito e COOKIE_SECURE desligado. Por padrão fica
+	// desligado, então um deploy sem configuração nunca vaza links de recuperação.
 	DevMode bool
 
 	// AdminEmails é a lista de permissão separada por vírgulas que concede
@@ -48,6 +50,15 @@ type Config struct {
 	// Rate limiting
 	RateLimitRequests int
 	RateLimitWindow   time.Duration
+
+	// Limite mais apertado (mesma janela) para login, cadastro e redefinição de senha.
+	AuthRateLimitRequests int
+
+	// ClientIPHeader é o header onde o proxy de borda coloca o IP real do
+	// cliente (ex.: CF-Connecting-IP no Cloudflare), usado no rate limit. Vazio
+	// mantém o padrão do Echo, que confia no X-Forwarded-For. Só defina se o
+	// backend for alcançável apenas pelo proxy: quem conecta direto forja o header.
+	ClientIPHeader string
 
 	// Armazenamento de imagens
 	ImageStorageType string // "local" ou "seaweedfs"
@@ -113,7 +124,10 @@ func Load() (*Config, error) {
 	cfg.PasswordResetTTL = time.Duration(resetMins) * time.Minute
 
 	cfg.FrontendURL = getEnv("FRONTEND_URL", "http://localhost:3000")
-	cfg.DevMode = !cfg.CookieSecure
+	cfg.DevMode = getEnv("DEV_MODE", "false") == "true" && !cfg.CookieSecure
+	if cfg.DevMode && !isLocalURL(cfg.FrontendURL) {
+		return nil, fmt.Errorf("DEV_MODE=true devolve links de recuperação de senha na resposta da API e só vale com FRONTEND_URL local (atual: %s)", cfg.FrontendURL)
+	}
 
 	cfg.AdminEmails = parseAdminEmails(getEnv("ADMIN_EMAILS", ""))
 
@@ -129,6 +143,14 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("invalid RATE_LIMIT_WINDOW_SECS: %w", err)
 	}
 	cfg.RateLimitWindow = time.Duration(rlWindowSecs) * time.Second
+
+	authRLReqs, err := strconv.Atoi(getEnv("AUTH_RATE_LIMIT_REQUESTS", "10"))
+	if err != nil {
+		return nil, fmt.Errorf("invalid AUTH_RATE_LIMIT_REQUESTS: %w", err)
+	}
+	cfg.AuthRateLimitRequests = authRLReqs
+
+	cfg.ClientIPHeader = os.Getenv("CLIENT_IP_HEADER")
 
 	// Image storage
 	cfg.ImageStorageType = getEnv("IMAGE_STORAGE_TYPE", "local")
@@ -157,6 +179,20 @@ func getEnv(key, fallback string) string {
 		return v
 	}
 	return fallback
+}
+
+// isLocalURL informa se a URL aponta para a própria máquina (localhost,
+// 127.0.0.1 ou ::1), qualquer que seja o esquema ou a porta.
+func isLocalURL(raw string) bool {
+	u, err := url.Parse(raw)
+	if err != nil {
+		return false
+	}
+	switch u.Hostname() {
+	case "localhost", "127.0.0.1", "::1":
+		return true
+	}
+	return false
 }
 
 // parseAdminEmails divide o valor separado por vírgulas de ADMIN_EMAILS em um

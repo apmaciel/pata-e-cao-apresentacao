@@ -190,14 +190,16 @@ export default function Header() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-20">
 
-            {/* Logo */}
+            {/* Logo. Same height as the h-20 row so it stays inside the header: at h-24 it hung 8px
+                below, and the opaque JPEG showed as a white strip over the page. width/height are
+                the file's real size (400x218), so the box has the right shape before it loads. */}
             <a href="/" className="flex-shrink-0">
               <img
                 src="/pec-logo.jpeg"
                 alt="PATA & CÃO"
-                width={240}
-                height={96}
-                className="h-24 w-auto object-contain"
+                width={400}
+                height={218}
+                className="block h-20 w-auto object-contain"
               />
             </a>
 

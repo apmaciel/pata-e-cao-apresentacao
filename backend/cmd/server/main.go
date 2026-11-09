@@ -114,7 +114,17 @@ func main() {
 	e := echo.New()
 	e.HideBanner = true
 
+	// Atrás de um proxy de borda (Cloudflare), o IP do cliente vem de um header
+	// que só o proxy escreve. Sem isso o Echo confia no X-Forwarded-For, que o
+	// cliente forja para escapar do rate limit.
+	if cfg.ClientIPHeader != "" {
+		e.IPExtractor = mw.HeaderIPExtractor(cfg.ClientIPHeader)
+	}
+
 	rateLimiter := mw.NewRateLimiter(cfg.RateLimitRequests, cfg.RateLimitWindow)
+	// Limite mais apertado nos endpoints de credenciais (força bruta, spam de
+	// redefinição de senha e de cadastro), somado ao limite global.
+	authRL := mw.NewRateLimiter(cfg.AuthRateLimitRequests, cfg.RateLimitWindow).Middleware()
 
 	e.Use(echomw.Logger())
 	e.Use(echomw.Recover())
@@ -140,12 +150,12 @@ func main() {
 
 	// Auth
 	auth := api.Group("/auth")
-	auth.POST("/signup", authH.Signup)
-	auth.POST("/login", authH.Login)
+	auth.POST("/signup", authH.Signup, authRL)
+	auth.POST("/login", authH.Login, authRL)
 	auth.POST("/refresh", authH.Refresh)
 	auth.DELETE("/logout", authH.Logout)
-	auth.POST("/password-reset/request", authH.RequestPasswordReset)
-	auth.POST("/password-reset/confirm", authH.ConfirmPasswordReset)
+	auth.POST("/password-reset/request", authH.RequestPasswordReset, authRL)
+	auth.POST("/password-reset/confirm", authH.ConfirmPasswordReset, authRL)
 
 	// Providers
 	providers := api.Group("/providers")
@@ -156,7 +166,7 @@ func main() {
 	providers.POST("/me/gallery", providerH.AddGalleryImage, jwtMw)               // requer autenticação — adicionar imagem à galeria
 	providers.DELETE("/me/gallery/:imageId", providerH.RemoveGalleryImage, jwtMw) // requer autenticação
 	providers.GET("/:id", providerH.GetProvider)                                  // público (apenas aprovados)
-	providers.POST("/register", authH.RegisterProvider)                           // público — cadastro + aplicação combinados
+	providers.POST("/register", authH.RegisterProvider, authRL)                   // público — cadastro + aplicação combinados
 	providers.POST("/apply", providerH.Apply, jwtMw)                              // requer autenticação
 	providers.GET("/:id/reviews", providerH.GetProviderReviews)                   // público
 	providers.POST("/:id/report", reportH.SubmitReport)                          // público — sem autenticação

@@ -165,13 +165,7 @@ portanto, as execuções subsequentes são idempotentes). As inicializações su
 ### 2. Configurar substituições (opcional)
 
 Todas as variáveis ​​de ambiente necessárias estão incorporadas em `docker-compose.yml` com valores padrão seguros para desenvolvimento.
-A única variável que você deve sobrescrever para qualquer uso não descartável é `JWT_SECRET` — coloque um arquivo `backend/.env` ao lado de `backend/.env.example`:
-
-```env
-JWT_SECRET=<32+ char secret — generate with: openssl rand -hex 32>
-```
-
-O arquivo `backend/.env` é montado no contêiner de backend durante a construção; qualquer coisa que você colocar lá substituirá os valores padrão em `docker-compose.yml`.
+Em desenvolvimento não é preciso mudar nada (o compose liga `DEV_MODE`: o link do "esqueci a senha" volta na resposta da API, já que não há envio de e-mail). Variáveis que o compose não define (`COOKIE_SECURE`, `FRONTEND_URL`, `ADMIN_EMAILS`, ...) podem ir em um `backend/.env` (copie de `backend/.env.example`). As chaves definidas em `environment:` no `docker-compose.yml` (`JWT_SECRET`, `CORS_ORIGINS`, `DATABASE_URL`, ...) têm prioridade sobre o `backend/.env`; em produção elas são sobrescritas pelo `docker-compose.prod.yml` (veja a seção 5).
 
 ### 3. Comandos comuns
 
@@ -200,6 +194,32 @@ o perfil `seaweedfs`:
 docker compose --profile seaweedfs up -d
 # em seguida, defina IMAGE_STORAGE_TYPE=seaweedfs em backend/.env e reinicie o backend
 ```
+
+### 5. Produção
+
+O `docker-compose.prod.yml` sobrescreve os valores de desenvolvimento (URL da API, CORS, `JWT_SECRET`, `DEV_MODE` e `CLIENT_IP_HEADER`) e limita o tamanho dos logs do Docker. No servidor, crie um `.env` na raiz do repositório (nunca commitar):
+
+```env
+JWT_SECRET=<gere com: openssl rand -hex 32>
+COMPOSE_FILE=docker-compose.yml:docker-compose.prod.yml
+```
+
+O compose se recusa a subir sem `JWT_SECRET`. As demais variáveis ficam em `backend/.env`:
+
+```env
+COOKIE_SECURE=true
+FRONTEND_URL=https://pataecao.com.br
+ADMIN_EMAILS=admin@exemplo.com
+```
+
+Depois, `docker compose up -d --build`.
+
+- O nginx do frontend encaminha `/api/` para o backend (mesma origem); basta expor a porta 3000, por exemplo com um Cloudflare Tunnel apontando para `http://localhost:3000`. Todas as portas publicadas ficam presas ao loopback (`127.0.0.1`).
+- `COOKIE_SECURE=true` marca o cookie de sessão como `Secure`. O modo dev (`DEV_MODE`), que devolve o link de redefinição de senha na resposta da API, fica desligado em produção; o backend nem sobe com `DEV_MODE=true` e `FRONTEND_URL` não local.
+- `CLIENT_IP_HEADER=CF-Connecting-IP` faz o rate limit usar o IP real informado pelo Cloudflare, e não o `X-Forwarded-For`, que o cliente forja. Sem o Cloudflare na frente, remova essa variável do `docker-compose.prod.yml`.
+- Login, cadastro e redefinição de senha têm um limite próprio por IP (`AUTH_RATE_LIMIT_REQUESTS`, padrão 10 por janela), além do limite global.
+- Documentos de identidade (`doc-*`) são servidos com `Cache-Control: private, no-store`: nem o Cloudflare nem o navegador guardam cópias.
+- O backend ainda não envia e-mails, então até existir um provedor de e-mail o fluxo "esqueci a senha" não entrega o link a ninguém.
 
 ### Executando sem Docker (avançado)
 

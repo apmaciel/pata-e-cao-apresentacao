@@ -95,6 +95,16 @@ func (h *ImageHandler) gateAdminForDocs(c echo.Context, imageID string) error {
 	return nil
 }
 
+// cacheControlFor devolve o Cache-Control de uma imagem. Documentos de
+// identidade (prefixo "doc-") ficam atrás de auth admin, então nunca podem ir
+// para um cache compartilhado (CDN) nem ficar no cache do navegador.
+func cacheControlFor(imageID string) string {
+	if strings.HasPrefix(imageID, docPrefix) {
+		return "private, no-store"
+	}
+	return fmt.Sprintf("public, max-age=%d", 30*24*60*60)
+}
+
 // serveImage retorna dados binários da imagem com headers de cache completos.
 func (h *ImageHandler) serveImage(c echo.Context, imageID string) error {
 	data, cacheHit, err := h.images.FetchImage(imageID)
@@ -110,7 +120,7 @@ func (h *ImageHandler) serveImage(c echo.Context, imageID string) error {
 		cacheStatus = "HIT"
 	}
 
-	c.Response().Header().Set("Cache-Control", fmt.Sprintf("public, max-age=%d", 30*24*60*60))
+	c.Response().Header().Set("Cache-Control", cacheControlFor(imageID))
 	c.Response().Header().Set("X-Cache", cacheStatus)
 	if meta != nil && meta.Hash != "" {
 		c.Response().Header().Set("ETag", fmt.Sprintf(`"%s"`, meta.Hash))
